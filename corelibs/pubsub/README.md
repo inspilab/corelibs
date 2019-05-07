@@ -32,7 +32,18 @@ class TestSubscriber(Subscriber):
 
 if __name__ == '__main__':
 	test_sub = TestSubscriber('test-subscription')
-    test_sub.run()
+    test_sub.subscribe()
     while True:
         pass
+```
+
+publisher.py
+```
+from corelibs.pubsub.publisher import Publisher
+
+
+if __name__ == '__main__':
+    data = {'key': 'value'}
+	test_pub = Publisher('test')
+    test_pub.publish(data)
 ```
