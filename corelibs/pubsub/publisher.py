@@ -27,6 +27,7 @@ class Publisher():
         data = self.handle_data(data)
         message_future = self.publisher.publish(self.topic_path, data=data)
         message_future.add_done_callback(self.callback)
+        return message_future.result()
 
     def callback(self, message_future):
         # When timeout is unspecified, the exception method waits indefinitely.
@@ -37,7 +38,7 @@ class Publisher():
                 )
             )
         else:
-            return message_future.result()
+            print(message_future.result())
 
     def handle_data(self, data):
         if self.serializer:
