@@ -21,6 +21,6 @@ setup(
     license='MIT',
     install_requires=[
         'redis==3.2.1',
-        'raven==6.9.0'
+        'google-cloud-pubsub==0.38.0'
     ]
 )

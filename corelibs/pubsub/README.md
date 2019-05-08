@@ -2,19 +2,15 @@
 
 ## Requirements
 - Python (2.7, 3.4, 3.5, 3.6, 3.7)
-- Django (1.11, 2.0, 2.1, 2.2)
 
 ## Setup
-Update file settings.py:
+Update environment variables:
 ```
-GOOGLE_CLOUD_PROJECT = os.environ.get('GOOGLE_CLOUD_PROJECT', '')
-GOOGLE_PUBSUB_TOPIC_DEAD_LETTER = os.environ.get(
-    'GOOGLE_PUBSUB_TOPIC_DEAD_LETTER',
-    'dead-letters'
-)
-REDIS_HOST = os.environ.get('REDIS_HOST', '127.0.0.1')
-REDIS_PORT = os.environ.get('REDIS_PORT', '6379')
-FAIL_LIMIT = os.environ.get('FAIL_LIMIT', '5')
+export GOOGLE_CLOUD_PROJECT = 'project_id'
+export GOOGLE_PUBSUB_TOPIC_DEAD_LETTER = 'dead-letters'
+export REDIS_HOST = '127.0.0.1'
+export REDIS_PORT = '6379'
+export FAIL_LIMIT = '5'
 ```
 
 ## Example

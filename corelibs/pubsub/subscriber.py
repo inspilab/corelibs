@@ -3,8 +3,7 @@ import redis
 import json
 import time
 
-from google.cloud import pubsub
-from raven.contrib.django.raven_compat.models import client
+from google.cloud import pubsub_v1
 from corelibs.pubsub.constants import (
     GOOGLE_CLOUD_PROJECT, GOOGLE_PUBSUB_TOPIC_DEAD_LETTER, FAIL_LIMIT,
     REDIS_HOST, REDIS_PORT
@@ -34,8 +33,7 @@ def get_fail_count(key):
         counter = int(redis_client.get(key))
         return counter
     except Exception as e:
-        print('Redis error: ', e)
-        client.captureException('Redis error: ', e)
+        raise Exception('Redis error: ', e)
 
 class Subscriber():
 
@@ -55,7 +53,7 @@ class Subscriber():
         )
 
     def subscribe(self):
-        subscriber = pubsub.SubscriberClient()
+        subscriber = pubsub_v1.SubscriberClient()
         subscriber.subscribe(self.subscription_path, callback=self.callback)
         print('Listening for messages on {}'.format(self.subscription_path))
 
@@ -82,7 +80,7 @@ class Subscriber():
         counter = get_fail_count(key)
         if counter >= FAIL_LIMIT:
             print("message %s failed" % message.message_id)
-            error_notifier = pubsub.PublisherClient()
+            error_notifier = pubsub_v1.PublisherClient()
             error_notifier.publish(self.dead_letter_queue_topic, message.data, **message.attributes)
             message.ack()
         else:

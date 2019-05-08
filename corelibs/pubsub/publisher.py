@@ -3,8 +3,7 @@ import redis
 import json
 import time
 
-from google.cloud import pubsub
-from raven.contrib.django.raven_compat.models import client
+from google.cloud import pubsub_v1
 from corelibs.pubsub.constants import (
     GOOGLE_CLOUD_PROJECT, GOOGLE_PUBSUB_TOPIC_DEAD_LETTER, FAIL_LIMIT,
     REDIS_HOST, REDIS_PORT
@@ -13,10 +12,9 @@ from corelibs.pubsub.constants import (
 
 class Publisher():
 
-    def __init__(self, topic_name, serializer=None):
+    def __init__(self, topic_name):
         self.topic_name = topic_name
-        self.serializer = serializer
-        self.publisher = pubsub.PublisherClient()
+        self.publisher = pubsub_v1.PublisherClient()
         self.topic_path = 'projects/{project_id}/topics/{topic}'.format(
             project_id=GOOGLE_CLOUD_PROJECT,
             topic=topic_name,
@@ -41,8 +39,5 @@ class Publisher():
             print(message_future.result())
 
     def handle_data(self, data):
-        if self.serializer:
-            data = self.serializer(data).data
-
         data = json.dumps(data)
         return data.encode('utf-8')
