@@ -3,3 +3,4 @@ coverage==4.5.3
 mock==3.0.4
 fakeredis==1.0.3
 google-cloud-pubsub==0.38.0
+djangorestframework==3.8.2

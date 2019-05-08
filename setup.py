@@ -8,10 +8,12 @@ README = open(os.path.join(here, 'README.md')).read()
 
 setup(
     name='corelibs',
-    version='1.1.1',
+    version='1.2.0',
     packages=[
         'corelibs',
         'corelibs.pubsub',
+        'corelibs.inspitrip',
+        'corelibs.inspitrip.serializers',
     ],
     description='Core Libs',
     long_description=README,
@@ -21,6 +23,7 @@ setup(
     license='MIT',
     install_requires=[
         'redis==3.2.1',
-        'google-cloud-pubsub==0.38.0'
+        'google-cloud-pubsub==0.38.0',
+        'djangorestframework==3.8.2'
     ]
 )
