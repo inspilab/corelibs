@@ -6,11 +6,11 @@
 ## Setup
 Update environment variables:
 ```
-export GOOGLE_CLOUD_PROJECT = 'project_id'
-export GOOGLE_PUBSUB_TOPIC_DEAD_LETTER = 'dead-letters'
-export REDIS_HOST = '127.0.0.1'
-export REDIS_PORT = '6379'
-export FAIL_LIMIT = '5'
+export GOOGLE_CLOUD_PROJECT='project_id'
+export GOOGLE_PUBSUB_TOPIC_DEAD_LETTER='dead-letters'
+export REDIS_HOST='127.0.0.1'
+export REDIS_PORT='6379'
+export FAIL_LIMIT='5'
 ```
 
 ## Example
