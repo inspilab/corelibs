@@ -1,7 +1,7 @@
-from rest_framework import generics
+from rest_framework import generics, mixins
 
 
-class CreateAPIView(generics.CreateAPIView):
+class CreateAPIView(mixins.CreateModelMixin):
     def perform_create(self, serializer):
         instance = serializer.save()
         if hasattr(self, 'get_publish_action') and callable(self.get_publish_action):
@@ -12,7 +12,7 @@ class CreateAPIView(generics.CreateAPIView):
         return instance
 
 
-class UpdateAPIView(generics.UpdateAPIView):
+class UpdateAPIView(mixins.UpdateModelMixin):
     def perform_update(self, serializer):
         instance = serializer.save()
         if hasattr(self, 'get_publish_action') and callable(self.get_publish_action):
@@ -23,11 +23,11 @@ class UpdateAPIView(generics.UpdateAPIView):
         return instance
 
 
-class RetrieveAPIView(generics.RetrieveAPIView):
+class RetrieveAPIView(mixins.RetrieveModelMixin):
     # Override function here
     pass
 
 
-class ListAPIView(generics.ListAPIView):
+class ListAPIView(mixins.ListModelMixin):
     # Override function here
     pass
