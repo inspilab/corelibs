@@ -6,7 +6,7 @@ from requests.exceptions import HTTPError, ConnectionError
 from corelibs.inspitrip.services.product import Product
 
 
-class TestProduct(unittest.TestCase):
+class TestPriceEngine(unittest.TestCase):
 
     def setUp(self):
         self.request_data = {
@@ -48,7 +48,6 @@ class TestProduct(unittest.TestCase):
 
     @patch('requests.post')
     def test_get_price(self, mock_post):
-        # Mock response
         # Mock response
         mock_resp = requests.models.Response()
         mock_resp.status_code = 200

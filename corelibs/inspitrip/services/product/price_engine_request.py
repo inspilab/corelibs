@@ -4,9 +4,9 @@ from requests.exceptions import HTTPError
 from .constants import PRODUCT_API_URL
 
 
-class ProductPriceEngine:
+class PriceEngine:
     @classmethod
-    def class_url(cls, product_pk, variant_pk):
+    def price_url(cls, product_pk, variant_pk):
         url = "%s/api/products/%s/variants/%s/price" % (
             PRODUCT_API_URL, product_pk, variant_pk
         )
@@ -18,7 +18,7 @@ class ProductPriceEngine:
             "Content-Type": "application/json",
             "Accept": "application/json"
         }
-        url = cls.class_url(product_pk, variant_pk)
+        url = cls.price_url(product_pk, variant_pk)
         try:
             res = requests.post(url, data=json.dumps(data), headers=headers)
             res.raise_for_status()
@@ -28,10 +28,3 @@ class ProductPriceEngine:
 
         response = res.json()
         return response
-
-
-class Product(ProductPriceEngine):
-    """
-    Add class actions for product here
-    """
-    pass
