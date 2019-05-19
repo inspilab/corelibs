@@ -1,4 +1,5 @@
 import requests
+import json
 from requests.exceptions import HTTPError
 from .constants import PRODUCT_API_URL
 
@@ -6,7 +7,7 @@ from .constants import PRODUCT_API_URL
 class ProductPriceEngine:
     @classmethod
     def class_url(cls, product_pk, variant_pk):
-        url = "%s/api/products/%s/variants/%s/price".format(
+        url = "%s/api/products/%s/variants/%s/price" % (
             PRODUCT_API_URL, product_pk, variant_pk
         )
         return url
@@ -19,7 +20,7 @@ class ProductPriceEngine:
         }
         url = cls.class_url(product_pk, variant_pk)
         try:
-            res = requests.post(url, data, format='json', headers=headers)
+            res = requests.post(url, data=json.dumps(data), headers=headers)
             res.raise_for_status()
         except HTTPError as http_e:
             # Status is NOT 2xx

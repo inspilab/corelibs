@@ -7,4 +7,4 @@ def default(var_name, value):
     return value
 
 
-PRODUCT_API_URL = default('PRODUCT_API_URL', '127.0.0.1:8000')
+PRODUCT_API_URL = default('PRODUCT_API_URL', 'http://127.0.0.1:8000')
