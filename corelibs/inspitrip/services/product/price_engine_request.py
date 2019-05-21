@@ -13,7 +13,21 @@ class PriceEngine:
         return url
 
     @classmethod
-    def get_price(cls, product_pk=None, variant_pk=None, data=None):
+    def unit_price_url(cls, product_pk, variant_pk, unit_pk, quantity):
+        url = "%s/api/products/%s/variants/%s/units/%s/price/%s" % (
+            PRODUCT_API_URL, product_pk, variant_pk, unit_pk, quantity
+        )
+        return url
+
+    @classmethod
+    def extra_service_price_url(cls, product_pk, variant_pk, extra_service_pk, quantity):
+        url = "%s/api/products/%s/variants/%s/extra_services/%s/price/%s" % (
+            PRODUCT_API_URL, product_pk, variant_pk, extra_service_pk, quantity
+        )
+        return url
+
+    @classmethod
+    def get_price(cls, product_pk, variant_pk, data):
         headers = {
             "Content-Type": "application/json",
             "Accept": "application/json"
@@ -21,6 +35,32 @@ class PriceEngine:
         url = cls.price_url(product_pk, variant_pk)
         try:
             res = requests.post(url, data=json.dumps(data), headers=headers)
+            res.raise_for_status()
+        except HTTPError as http_e:
+            # Status is NOT 2xx
+            raise http_e
+
+        response = res.json()
+        return response
+
+    @classmethod
+    def get_unit_price(cls, product_pk, variant_pk, unit_pk, quantity):
+        url = cls.unit_price_url(product_pk, variant_pk, unit_pk, quantity)
+        try:
+            res = requests.get(url)
+            res.raise_for_status()
+        except HTTPError as http_e:
+            # Status is NOT 2xx
+            raise http_e
+
+        response = res.json()
+        return response
+
+    @classmethod
+    def get_extra_service_price(cls, product_pk, variant_pk, extra_service_pk, quantity):
+        url = cls.extra_service_price_url(product_pk, variant_pk, extra_service_pk, quantity)
+        try:
+            res = requests.get(url)
             res.raise_for_status()
         except HTTPError as http_e:
             # Status is NOT 2xx

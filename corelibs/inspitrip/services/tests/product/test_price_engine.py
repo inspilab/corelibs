@@ -46,6 +46,20 @@ class TestPriceEngine(unittest.TestCase):
             'total': 400
         }
 
+        self.unit_response_data = {
+            'quantity': 1,
+            'title': 'Title',
+            'price': 100,
+            'unit': 123
+        }
+
+        self.extra_service_response_data = {
+            'quantity': 1,
+            'title': 'Title',
+            'price': 100,
+            'extra_service': 123
+        }
+
     @patch('requests.post')
     def test_get_price(self, mock_post):
         # Mock response
@@ -79,3 +93,31 @@ class TestPriceEngine(unittest.TestCase):
         # Send request
         with self.assertRaises(HTTPError) as context:
             response = Product.get_price(product_pk=123, variant_pk=456, data=self.request_data)
+
+    @patch('requests.get')
+    def test_get_unit_price(self, mock_get):
+        # Mock response
+        mock_resp = requests.models.Response()
+        mock_resp.status_code = 200
+        mock_resp.json = lambda : self.unit_response_data
+        mock_get.return_value = mock_resp
+
+        # Send request
+        response = Product.get_unit_price(
+            product_pk=123, variant_pk=456, unit_pk=123, quantity=1
+        )
+        self.assertEqual(response, self.unit_response_data)
+
+    @patch('requests.get')
+    def test_get_extra_service_price(self, mock_get):
+        # Mock response
+        mock_resp = requests.models.Response()
+        mock_resp.status_code = 200
+        mock_resp.json = lambda : self.extra_service_response_data
+        mock_get.return_value = mock_resp
+
+        # Send request
+        response = Product.get_extra_service_price(
+            product_pk=123, variant_pk=456, extra_service_pk=123, quantity=1
+        )
+        self.assertEqual(response, self.extra_service_response_data)
