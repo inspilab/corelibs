@@ -45,9 +45,13 @@ class PriceEngine:
 
     @classmethod
     def get_unit_price(cls, product_pk, variant_pk, unit_pk, quantity):
+        headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+        }
         url = cls.unit_price_url(product_pk, variant_pk, unit_pk, quantity)
         try:
-            res = requests.get(url)
+            res = requests.get(url, headers=headers)
             res.raise_for_status()
         except HTTPError as http_e:
             # Status is NOT 2xx
@@ -58,9 +62,13 @@ class PriceEngine:
 
     @classmethod
     def get_extra_service_price(cls, product_pk, variant_pk, extra_service_pk, quantity):
+        headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+        }
         url = cls.extra_service_price_url(product_pk, variant_pk, extra_service_pk, quantity)
         try:
-            res = requests.get(url)
+            res = requests.get(url, headers=headers)
             res.raise_for_status()
         except HTTPError as http_e:
             # Status is NOT 2xx
