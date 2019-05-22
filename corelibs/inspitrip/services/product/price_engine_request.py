@@ -21,7 +21,7 @@ class PriceEngine:
 
     @classmethod
     def extra_service_price_url(cls, product_pk, variant_pk, extra_service_pk, quantity):
-        url = "%s/api/products/%s/variants/%s/extra_services/%s/price/%s" % (
+        url = "%s/api/products/%s/variants/%s/extra-services/%s/price/%s" % (
             PRODUCT_API_URL, product_pk, variant_pk, extra_service_pk, quantity
         )
         return url
