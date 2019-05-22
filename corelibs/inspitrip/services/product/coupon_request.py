@@ -7,7 +7,7 @@ from .constants import PRODUCT_API_URL
 class Coupon:
     @classmethod
     def coupon_url(cls, code, amount, product_pk):
-        url = "%s/api/coupons/%s?price=%s&experience_id=%s" % (
+        url = "%s/api/coupons/%s?price=%s&experience=%s" % (
             PRODUCT_API_URL, code, amount, product_pk
         )
         return url
