@@ -4,7 +4,7 @@ from requests.exceptions import HTTPError
 from .constants import PRODUCT_API_URL
 
 
-class PriceEngine:
+class PriceEngineRequest:
     @classmethod
     def price_url(cls, product_pk, variant_pk):
         url = "%s/api/products/%s/variants/%s/price" % (

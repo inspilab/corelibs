@@ -4,24 +4,21 @@ from requests.exceptions import HTTPError
 from .constants import PRODUCT_API_URL
 
 
-class CouponRequest:
+class ProductRequest:
     @classmethod
-    def coupon_url(cls, code, amount, product_pk):
-        url = "%s/api/coupons/%s?price=%s&experience=%s" % (
-            PRODUCT_API_URL, code, amount, product_pk
+    def detail_url(cls, product_pk):
+        url = "%s/api/products/%s" % (
+            PRODUCT_API_URL, product_pk
         )
         return url
 
     @classmethod
-    def get_coupon(cls, product_pk, code, amount, language, country, currency_code):
+    def get_detail(cls, product_pk):
         headers = {
             "Content-Type": "application/json",
             "Accept": "application/json",
-            "X-Language": language,
-            "X-Country": country,
-            "X-Currency": currency_code,
         }
-        url = cls.coupon_url(code, amount, product_pk)
+        url = cls.detail_url(product_pk)
         try:
             res = requests.get(url, headers=headers)
             res.raise_for_status()
