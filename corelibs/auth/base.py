@@ -39,7 +39,7 @@ class AuthenticationBase(BaseAuthentication):
 
     def authenticate(self, request):
         UserStruct = namedtuple(
-            'UserStruct', 'username is_authenticated is_staff id pk email first_name last_name'
+            'UserStruct', 'username is_authenticated is_staff is_localguide id pk email first_name last_name'
         )
         jwt_token = self.get_jwt_value(request)
         if not jwt_token:
@@ -52,6 +52,7 @@ class AuthenticationBase(BaseAuthentication):
                     username=user['email'],
                     is_authenticated=True,
                     is_staff=user['is_staff'],
+                    is_localguide=user['is_localguide'],
                     id=user['id'],
                     pk=user['id'],
                     email=user['email'],
