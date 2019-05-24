@@ -39,22 +39,24 @@ class AuthenticationBase(BaseAuthentication):
 
     def authenticate(self, request):
         UserStruct = namedtuple(
-            'UserStruct', 'username is_authenticated is_staff id pk email'
+            'UserStruct', 'username is_authenticated is_staff id pk email first_name last_name'
         )
         jwt_token = self.get_jwt_value(request)
         if not jwt_token:
             return None
         payload = self.valid_request(request, jwt_token)
-        if payload and 'username' in payload and 'id' in payload:
+        if payload and 'username' in payload and 'user_id' in payload:
             user = self.authenticate_credentials(payload, jwt_token)
             if user:
                 user_data = UserStruct(
-                    username=payload['username'],
+                    username=user['email'],
                     is_authenticated=True,
-                    is_staff=payload['is_staff'],
-                    id=payload['id'],
-                    pk=payload['id'],
-                    email=payload['email'],
+                    is_staff=user['is_staff'],
+                    id=user['id'],
+                    pk=user['id'],
+                    email=user['email'],
+                    first_name=user['first_name'],
+                    last_name=user['last_name'],
                 )
                 return (user_data, jwt_token)
         else:
