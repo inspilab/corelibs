@@ -8,10 +8,11 @@ README = open(os.path.join(here, 'README.md')).read()
 
 setup(
     name='corelibs',
-    version='1.3.10',
+    version='1.3.11',
     packages=[
         'corelibs',
         'corelibs.pubsub',
+        'corelibs.auth',
         'corelibs.inspitrip',
         'corelibs.inspitrip.serializers',
         'corelibs.inspitrip.views',
