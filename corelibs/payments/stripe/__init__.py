@@ -30,7 +30,7 @@ class StripeProvider(BasicProvider):
     def process_data(self, payment, request):
         success_url = payment.get_success_url()
         if not payment.transaction_id:
-            stripe.api_key = self.provider.secret_key
+            stripe.api_key = self.secret_key
             try:
                 self.charge = stripe.Charge.create(
                     capture=False,
@@ -45,16 +45,14 @@ class StripeProvider(BasicProvider):
                 charge_id = e.json_body['error']['charge']
                 self.charge = stripe.Charge.retrieve(charge_id)
                 # The card has been declined
-                self._errors['__all__'] = self.error_class([str(e)])
                 payment.change_status(PaymentStatus.ERROR, str(e))
         else:
-            msg = _('This payment has already been processed.')
-            self._errors['__all__'] = self.error_class([msg])
+            raise PaymentError('This payment has already been processed.')
 
         payment.transaction_id = self.charge.id
         payment.attrs.charge = json.dumps(self.charge)
         payment.change_status(PaymentStatus.PREAUTH)
-        if self.provider._capture:
+        if self._capture:
             payment.capture()
         return success_url
 
