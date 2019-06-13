@@ -69,7 +69,11 @@ class TestPriceEngine(unittest.TestCase):
         mock_post.return_value = mock_resp
 
         # Send request
-        response = Product.get_price(product_pk=123, variant_pk=456, data=self.request_data)
+        response = Product.get_price(
+            product_pk=123, variant_pk=456,
+            language='en', country='', currency_code='USD',
+            data=self.request_data
+        )
         self.assertEqual(response, self.response_data)
 
     @patch('requests.post')
@@ -81,7 +85,11 @@ class TestPriceEngine(unittest.TestCase):
 
         # Send request
         with self.assertRaises(HTTPError) as context:
-            response = Product.get_price(product_pk=123, variant_pk=456, data=self.request_data)
+            response = Product.get_price(
+                product_pk=123, variant_pk=456,
+                language='en', country='', currency_code='USD',
+                data=self.request_data
+            )
 
     @patch('requests.post')
     def test_get_price_connection_error(self, mock_post):
@@ -92,7 +100,11 @@ class TestPriceEngine(unittest.TestCase):
 
         # Send request
         with self.assertRaises(HTTPError) as context:
-            response = Product.get_price(product_pk=123, variant_pk=456, data=self.request_data)
+            response = Product.get_price(
+                product_pk=123, variant_pk=456,
+                language='en', country='', currency_code='USD',
+                data=self.request_data
+            )
 
     @patch('requests.get')
     def test_get_unit_price(self, mock_get):

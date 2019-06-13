@@ -27,10 +27,13 @@ class PriceEngineRequest:
         return url
 
     @classmethod
-    def get_price(cls, product_pk, variant_pk, data):
+    def get_price(cls, product_pk, variant_pk, language, country, currency_code, data):
         headers = {
             "Content-Type": "application/json",
-            "Accept": "application/json"
+            "Accept": "application/json",
+            "X-Language": language,
+            "X-Country": country,
+            "X-Currency": currency_code
         }
         url = cls.price_url(product_pk, variant_pk)
         try:
