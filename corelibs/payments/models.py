@@ -169,3 +169,15 @@ class BasePayment(models.Model):
     @property
     def attrs(self):
         return PaymentAttributeProxy(self)
+
+
+class BaseCustomer(models.Model):
+
+    class Meta:
+        abstract = True
+
+    created = models.DateTimeField(auto_now_add=True)
+    modified = models.DateTimeField(auto_now=True)
+    customer_id = models.CharField(max_length=200, db_index=True)
+    email = models.EmailField(max_length=100, unique=True, db_index=True)
+    method = models.CharField(max_length=100)

@@ -4,7 +4,10 @@ import json
 
 import stripe
 
-from .. import RedirectNeeded, PaymentError, PaymentStatus
+from .. import (
+    RedirectNeeded, PaymentError, PaymentStatus,
+    get_payment_customer_model
+)
 from ..core import BasicProvider
 
 
@@ -32,20 +35,25 @@ class StripeProvider(BasicProvider):
         if not payment.transaction_id:
             stripe.api_key = self.secret_key
             try:
+                # Update customer info
+                token = stripe.Token.create(card=request.data['card'])
+                customer, error = self._create_or_update_customer(
+                    email=request.user.email, method='stripe', token_id=token.id
+                )
+                if error:
+                    raise Exception("Update customer failed", error)
+
                 self.charge = stripe.Charge.create(
                     capture=False,
                     amount=int(payment.total * 100),
                     currency=payment.currency,
-                    card=request.data['card'],
+                    customer=customer.customer_id,
                     description='%s %s' % (
                         payment.billing_last_name,
                         payment.billing_first_name))
-            except stripe.error.CardError as e:
-                # Making sure we retrieve the charge
-                charge_id = e.json_body['error']['charge']
-                self.charge = stripe.Charge.retrieve(charge_id)
-                # The card has been declined
-                payment.change_status(PaymentStatus.ERROR, str(e))
+            except Exception as e:
+                error_message = str(e)
+                raise PaymentError(error_message)
         else:
             raise PaymentError('This payment has already been processed.')
 
@@ -78,3 +86,44 @@ class StripeProvider(BasicProvider):
         charge.refund(amount=amount)
         payment.attrs.refund = json.dumps(charge)
         return Decimal(amount) / 100
+
+    def _create_or_update_customer(self, email, method, token_id):
+        stripe.api_key = self.secret_key
+        PaymentCustomer = get_payment_customer_model()
+
+        instance = PaymentCustomer.objects.filter(email=email, method=method).first()
+        if not instance:
+            # Create
+            try:
+                stripe_customer = stripe.Customer.create(
+                    email=email, source=token_id
+                )
+                instance = PaymentCustomer.objects.create(
+                    email=email,
+                    method=method,
+                    customer_id=stripe_customer.id
+                )
+            except Exception as error:
+                return instance, error
+        else:
+            # Update
+            try:
+                card = stripe.Customer.create_source(
+                    instance.customer_id,
+                    source=token_id
+                )
+                if not card or not card.id:
+                    raise Exception(
+                        "Cannot attach card to customer %s. Token: %s" % (
+                            instance.customer_id, token_id
+                        )
+                    )
+                stripe.Customer.modify(
+                    instance.customer_id,
+                    default_source=card.id
+                )
+            except Exception as error:
+                return instance, error
+
+        return instance, ''
+
