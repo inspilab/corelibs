@@ -9,18 +9,31 @@ from .. import (
     get_payment_customer_model
 )
 from ..core import BasicProvider
+from .serializers import CardSerializer
 
 
 class StripeProvider(BasicProvider):
 
-    def __init__(self, public_key, secret_key, image='', name='', **kwargs):
+    def __init__(self, public_key, secret_key, coefficient_supports, image='', name='', **kwargs):
         stripe.api_key = secret_key
         self.secret_key = secret_key
         self.public_key = public_key
         self.image = image
         self.name = name
+        self.coefficient_supports = coefficient_supports
         self.charge = None
         super(StripeProvider, self).__init__(**kwargs)
+
+    def _get_coefficient(self, currency_code):
+        try:
+            coefficient = self.coefficient_supports[currency_code.lower()]
+            if isinstance(coefficient, int) and coefficient > 0:
+                return coefficient
+
+        except Exception:
+            raise Exception("Payment does not support this currency: %s" % currency_code)
+
+        raise Exception("Payment does not support this currency: %s" % currency_code)
 
     def get_form(self, payment, data=None):
         if payment.status == PaymentStatus.WAITING:
@@ -35,17 +48,22 @@ class StripeProvider(BasicProvider):
         if not payment.transaction_id:
             stripe.api_key = self.secret_key
             try:
+                # Validate card
+                card_data = request.data['card']
+                serializer = CardSerializer(data=card_data)
+                serializer.is_valid(raise_exception=True)
                 # Update customer info
-                token = stripe.Token.create(card=request.data['card'])
+                token = stripe.Token.create(card=serializer.validated_data)
                 customer, error = self._create_or_update_customer(
                     email=request.user.email, method='stripe', token_id=token.id
                 )
                 if error:
                     raise Exception("Update customer failed", error)
 
+                coefficient = self._get_coefficient(currency_code=payment.currency)
                 self.charge = stripe.Charge.create(
                     capture=False,
-                    amount=int(payment.total * 100),
+                    amount=int(payment.total) * int(coefficient),
                     currency=payment.currency,
                     customer=customer.customer_id,
                     description='%s %s' % (
@@ -65,7 +83,8 @@ class StripeProvider(BasicProvider):
         return success_url
 
     def capture(self, payment, amount=None):
-        amount = int((amount or payment.total) * 100)
+        coefficient = self._get_coefficient(currency_code=payment.currency)
+        amount = int(amount or payment.total) * int(coefficient)
         charge = stripe.Charge.retrieve(payment.transaction_id)
         try:
             charge.capture(amount=amount)
@@ -73,7 +92,7 @@ class StripeProvider(BasicProvider):
             payment.change_status(PaymentStatus.REFUNDED)
             raise PaymentError('Payment already refunded')
         payment.attrs.capture = json.dumps(charge)
-        return Decimal(amount) / 100
+        return Decimal(amount) / int(coefficient)
 
     def release(self, payment):
         charge = stripe.Charge.retrieve(payment.transaction_id)
@@ -81,11 +100,12 @@ class StripeProvider(BasicProvider):
         payment.attrs.release = json.dumps(charge)
 
     def refund(self, payment, amount=None):
-        amount = int((amount or payment.total) * 100)
+        coefficient = self._get_coefficient(currency_code=payment.currency)
+        amount = int(amount or payment.total) * int(coefficient)
         charge = stripe.Charge.retrieve(payment.transaction_id)
         charge.refund(amount=amount)
         payment.attrs.refund = json.dumps(charge)
-        return Decimal(amount) / 100
+        return Decimal(amount) / int(coefficient)
 
     def _create_or_update_customer(self, email, method, token_id):
         stripe.api_key = self.secret_key
