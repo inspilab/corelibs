@@ -76,3 +76,21 @@ def get_payment_model():
             settings.PAYMENT_MODEL)
         raise ImproperlyConfigured(msg)
     return payment_model
+
+
+def get_payment_customer_model():
+    '''
+    Return the Payment model that is active in this project
+    '''
+    try:
+        app_label, model_name = settings.PAYMENT_CUSTOMER_MODEL.split('.')
+    except (ValueError, AttributeError):
+        raise ImproperlyConfigured('PAYMENT_CUSTOMER_MODEL must be of the form '
+                                   '"app_label.model_name"')
+    payment_customer_model = get_model(app_label, model_name)
+    if payment_customer_model is None:
+        msg = (
+            'PAYMENT_CUSTOMER_MODEL refers to model "%s" that has not been installed' %
+            settings.PAYMENT_CUSTOMER_MODEL)
+        raise ImproperlyConfigured(msg)
+    return payment_customer_model
