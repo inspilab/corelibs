@@ -14,31 +14,18 @@ from .serializers import CardSerializer
 
 class StripeProvider(BasicProvider):
 
-    def __init__(self, public_key, secret_key, coefficient_supports, image='', name='', **kwargs):
+    def __init__(self, public_key, secret_key, image='', name='', **kwargs):
         stripe.api_key = secret_key
         self.secret_key = secret_key
         self.public_key = public_key
         self.image = image
         self.name = name
-        self.coefficient_supports = coefficient_supports
         self.charge = None
         super(StripeProvider, self).__init__(**kwargs)
-
-    def _get_coefficient(self, currency_code):
-        try:
-            coefficient = self.coefficient_supports[currency_code.lower()]
-            if isinstance(coefficient, int) and coefficient > 0:
-                return coefficient
-
-        except Exception:
-            raise Exception("Payment does not support this currency: %s" % currency_code)
-
-        raise Exception("Payment does not support this currency: %s" % currency_code)
 
     def get_form(self, payment, data=None):
         if payment.status == PaymentStatus.WAITING:
             payment.change_status(PaymentStatus.INPUT)
-            payment.save()
 
         # Stay in page
         return True
@@ -60,7 +47,7 @@ class StripeProvider(BasicProvider):
                 if error:
                     raise Exception("Update customer failed", error)
 
-                coefficient = self._get_coefficient(currency_code=payment.currency)
+                coefficient = self.get_coefficient(currency_code=payment.currency)
                 self.charge = stripe.Charge.create(
                     capture=False,
                     amount=int(payment.total) * int(coefficient),
@@ -83,7 +70,7 @@ class StripeProvider(BasicProvider):
         return success_url
 
     def capture(self, payment, amount=None):
-        coefficient = self._get_coefficient(currency_code=payment.currency)
+        coefficient = self.get_coefficient(currency_code=payment.currency)
         amount = int(amount or payment.total) * int(coefficient)
         charge = stripe.Charge.retrieve(payment.transaction_id)
         try:
@@ -100,7 +87,7 @@ class StripeProvider(BasicProvider):
         payment.attrs.release = json.dumps(charge)
 
     def refund(self, payment, amount=None):
-        coefficient = self._get_coefficient(currency_code=payment.currency)
+        coefficient = self.get_coefficient(currency_code=payment.currency)
         amount = int(amount or payment.total) * int(coefficient)
         charge = stripe.Charge.retrieve(payment.transaction_id)
         charge.refund(amount=amount)

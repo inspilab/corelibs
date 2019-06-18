@@ -26,8 +26,8 @@ def get_base_url():
     """
     Returns host url according to project settings. Protocol is chosen by
     checking PAYMENT_USES_SSL variable.
-    If PAYMENT_HOST is not specified, gets domain from Sites. 
-    Otherwise checks if it's callable and returns it's result. If it's not a 
+    If PAYMENT_HOST is not specified, gets domain from Sites.
+    Otherwise checks if it's callable and returns it's result. If it's not a
     callable treats it as domain.
     """
     protocol = 'https' if PAYMENT_USES_SSL else 'http'
@@ -51,7 +51,8 @@ class BasicProvider(object):
     def get_action(self, payment):
         return self.get_return_url(payment)
 
-    def __init__(self, capture=True):
+    def __init__(self, coefficient_supports={}, capture=True):
+        self._coefficient_supports = coefficient_supports
         self._capture = capture
 
     def get_hidden_fields(self, payment):
@@ -63,6 +64,20 @@ class BasicProvider(object):
         transfer provider-specific data.
         '''
         raise NotImplementedError()
+
+    def get_coefficient(self, currency_code):
+        '''
+        Check if Variant support this currency
+        '''
+        try:
+            coefficient = self._coefficient_supports[currency_code.lower()]
+            if isinstance(coefficient, int) and coefficient > 0:
+                return coefficient
+
+        except Exception:
+            raise Exception("Payment does not support this currency: %s" % currency_code)
+
+        raise Exception("Payment does not support this currency: %s" % currency_code)
 
     def get_form(self, payment, data=None):
         '''
