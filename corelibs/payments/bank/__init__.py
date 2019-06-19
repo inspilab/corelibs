@@ -26,6 +26,12 @@ class BankProvider(BasicProvider):
         return True
 
     def process_data(self, payment, request):
+        if payment.status == PaymentStatus.CONFIRMED:
+            raise PaymentError('This payment has already been confirmed.')
+
+        if payment.status == PaymentStatus.PREAUTH:
+            raise PaymentError('This payment has already been processed.')
+
         # Check supported currencies
         coefficient = self.get_coefficient(currency_code=payment.currency)
 
@@ -35,6 +41,9 @@ class BankProvider(BasicProvider):
         return success_url
 
     def capture(self, payment, amount=None):
+        if payment.status == PaymentStatus.CONFIRMED:
+            raise PaymentError('This payment has already been confirmed.')
+
         # Check supported currencies
         coefficient = self.get_coefficient(currency_code=payment.currency)
 
