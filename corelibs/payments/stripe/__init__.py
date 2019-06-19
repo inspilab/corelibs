@@ -52,10 +52,7 @@ class StripeProvider(BasicProvider):
                     capture=False,
                     amount=int(payment.total) * int(coefficient),
                     currency=payment.currency,
-                    customer=customer.customer_id,
-                    description='%s %s' % (
-                        payment.billing_last_name,
-                        payment.billing_first_name))
+                    customer=customer.customer_id)
             except Exception as e:
                 error_message = str(e)
                 raise PaymentError(error_message)

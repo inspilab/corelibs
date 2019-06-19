@@ -152,7 +152,7 @@ class BasePayment(models.Model):
         self.change_status(PaymentStatus.REFUNDED)
 
     def refund(self, amount=None):
-        if self.status != PaymentStatus.CONFIRMED:
+        if self.status not in [PaymentStatus.CONFIRMED, PaymentStatus.REFUNDED]:
             raise ValueError(
                 'Only charged payments can be refunded.')
         if amount:
@@ -162,7 +162,7 @@ class BasePayment(models.Model):
             provider = provider_factory(self.variant)
             amount = provider.refund(self, amount)
             self.captured_amount -= amount
-        if self.captured_amount == 0 and self.status != PaymentStatus.REFUNDED:
+        if amount > 0 and self.status != PaymentStatus.REFUNDED:
             self.change_status(PaymentStatus.REFUNDED)
         self.save()
 
