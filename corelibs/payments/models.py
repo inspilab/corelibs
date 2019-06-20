@@ -74,6 +74,8 @@ class BasePayment(models.Model):
     token = models.CharField(max_length=36, blank=True, default='')
     captured_amount = models.DecimalField(
         max_digits=20, decimal_places=2, default='0.0')
+    refunded_amount = models.DecimalField(
+        max_digits=20, decimal_places=2, default='0.0')
 
     class Meta:
         abstract = True
@@ -162,7 +164,8 @@ class BasePayment(models.Model):
             provider = provider_factory(self.variant)
             amount = provider.refund(self, amount)
             self.captured_amount -= amount
-        if amount > 0 and self.status != PaymentStatus.REFUNDED:
+            self.refunded_amount += amount
+        if self.refunded_amount > 0 and self.status != PaymentStatus.REFUNDED:
             self.change_status(PaymentStatus.REFUNDED)
         self.save()
 
