@@ -8,7 +8,7 @@ README = open(os.path.join(here, 'README.md')).read()
 
 setup(
     name='corelibs',
-    version='1.4.9',
+    version='1.4.10',
     packages=[
         'corelibs',
         'corelibs.pubsub',
@@ -23,6 +23,7 @@ setup(
         'corelibs.payments.bank',
         'corelibs.payments.paypal',
         'corelibs.payments.stripe',
+        'corelibs.payments.payoo',
     ],
     description='Core Libs',
     long_description=README,
