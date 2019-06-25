@@ -99,7 +99,7 @@ class PayooProvider(BasicProvider):
         validity_date = datetime.now() + timedelta(days=self.order_ship_days)
         validity_time = validity_date.strftime("%Y%m%d%H%M%S")
         customer_name = extra_data['customer_name']
-        customer_phone = extra_data['customer_phone']
+        customer_phone = extra_data['customer_phone'] if 'customer_phone' in extra_data and extra_data['customer_phone'] else ''
         customer_email = extra_data['customer_email']
 
         order_xml = f'<shops><shop>'
@@ -116,7 +116,8 @@ class PayooProvider(BasicProvider):
         order_xml += f'<order_description>{quote_plus(order_detail)}</order_description>'
         order_xml += f'<validity_time>{validity_time}</validity_time>'
         order_xml += f'<notify_url>{self.notify_url}</notify_url>'
-        order_xml += f'<customer><name>{customer_name}</name><phone>{customer_phone}</phone>'
+        order_xml += f'<customer><name>{customer_name}</name>'
+        order_xml += f'<phone>{customer_phone}</phone>' if customer_phone else ''
         order_xml += f'<email>{customer_email}</email></customer></shop></shops>'
 
         return order_xml

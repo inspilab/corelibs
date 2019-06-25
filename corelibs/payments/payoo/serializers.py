@@ -8,7 +8,7 @@ class OrderSerializer(serializers.Serializer):
     order_ship_date = serializers.DateField(required=True, format='%Y-%m-%d')
     order_detail = serializers.CharField(required=True)
     customer_name = serializers.CharField(required=True)
-    customer_phone = serializers.CharField(required=True)
+    customer_phone = serializers.CharField(required=False, allow_blank=True, allow_null=True)
     customer_email = serializers.EmailField(required=True)
 
 
