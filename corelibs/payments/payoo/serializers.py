@@ -5,5 +5,5 @@ import stripe
 class ResponseSerializer(serializers.Serializer):
     session = serializers.CharField(required=True)
     order_no = serializers.CharField(required=True)
-    status = serializers.IntegerField(required=True)
+    status = serializers.CharField(required=True)
     checksum = serializers.CharField(required=True)

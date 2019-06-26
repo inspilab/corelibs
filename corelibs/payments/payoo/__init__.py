@@ -185,12 +185,10 @@ class PayooProvider(BasicProvider):
             if not str_hash == checksum:
                 raise Exception("Verified is failure. Order No: %s" % order_no)
 
-            # Check if payment is paid
-            if not status == 1:
+            if not str(status) == '1':
                 if 'errormsg' in request.data and request.data['errormsg']:
-                    self.set_error_data(payment, request.data['errormsg'])
-                payment.change_status(PaymentStatus.REJECTED)
-                return payment.get_failure_url()
+                    raise Exception("Process payoo failed. Error: %s" % request.data['errormsg'])
+
         except Exception as e:
             raise PaymentError(str(e))
 
