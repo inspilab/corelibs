@@ -67,6 +67,7 @@ class BasePayment(models.Model):
     billing_postcode = models.CharField(max_length=256, blank=True)
     billing_country_code = models.CharField(max_length=2, blank=True)
     billing_country_area = models.CharField(max_length=256, blank=True)
+    billing_ship_date = models.DateField(blank=True, null=True)
     billing_email = models.EmailField(blank=True)
     customer_ip_address = models.GenericIPAddressField(blank=True, null=True)
     extra_data = models.TextField(blank=True, default='')

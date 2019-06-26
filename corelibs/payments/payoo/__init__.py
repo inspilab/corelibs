@@ -14,7 +14,7 @@ import logging
 import requests
 import json
 import hashlib
-from .serializers import OrderSerializer, ResponseSerializer
+from .serializers import ResponseSerializer
 from .. import PaymentError, PaymentStatus, RedirectNeeded
 from ..core import BasicProvider
 
@@ -92,15 +92,18 @@ class PayooProvider(BasicProvider):
         payment.extra_data = json.dumps(extra_data)
 
     def _generate_order_xml_data(self, payment, extra_data):
-        order_no = extra_data['order_no']
-        order_cash_amount = extra_data['order_cash_amount']
-        order_ship_date = datetime.strptime(extra_data['order_ship_date'], "%Y-%m-%d").strftime("%d/%m/%Y")
-        order_detail = extra_data['order_detail']
+        order_no = payment.token
+        order_cash_amount = int(payment.total)
+        order_ship_date = payment.billing_ship_date
+        if not order_ship_date:
+            order_ship_date = datetime.now().date() + timedelta(days=1)
+
+        order_ship_date = order_ship_date.strftime("%d/%m/%Y")
+        order_detail = payment.description
         validity_date = datetime.now() + timedelta(days=self.order_ship_days)
         validity_time = validity_date.strftime("%Y%m%d%H%M%S")
-        customer_name = extra_data['customer_name']
-        customer_phone = extra_data['customer_phone'] if 'customer_phone' in extra_data and extra_data['customer_phone'] else ''
-        customer_email = extra_data['customer_email']
+        customer_name = str(payment.billing_first_name) + str(payment.billing_last_name)
+        customer_email = payment.billing_email
 
         order_xml = f'<shops><shop>'
         order_xml += f'<session>{order_no}</session>'
@@ -116,9 +119,12 @@ class PayooProvider(BasicProvider):
         order_xml += f'<order_description>{quote_plus(order_detail)}</order_description>'
         order_xml += f'<validity_time>{validity_time}</validity_time>'
         order_xml += f'<notify_url>{self.notify_url}</notify_url>'
-        order_xml += f'<customer><name>{customer_name}</name>'
-        order_xml += f'<phone>{customer_phone}</phone>' if customer_phone else ''
-        order_xml += f'<email>{customer_email}</email></customer></shop></shops>'
+        order_xml += f'<customer>'
+        if (customer_name and customer_email):
+            order_xml += f'<name>{customer_name}</name>'
+            order_xml += f'<email>{customer_email}</email>'
+
+        order_xml += f'</customer></shop></shops>'
 
         return order_xml
 
@@ -143,11 +149,6 @@ class PayooProvider(BasicProvider):
     def get_form(self, payment, data=None):
         # Check coefficient support
         self.get_coefficient(currency_code=payment.currency)
-        try:
-            serializer = OrderSerializer(data=data)
-            serializer.is_valid(raise_exception=True)
-        except Exception as e:
-            raise PaymentError(str(e))
 
         if not payment.id:
             payment.save()
