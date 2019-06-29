@@ -15,7 +15,6 @@ from django.utils import timezone
 import requests
 from requests.exceptions import HTTPError
 
-from .forms import PaymentForm
 from .. import PaymentError, PaymentStatus, RedirectNeeded
 from ..core import BasicProvider, get_credit_card_issuer
 
