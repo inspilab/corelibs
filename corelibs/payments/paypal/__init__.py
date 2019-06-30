@@ -1,4 +1,5 @@
 from __future__ import unicode_literals
+import base64
 from datetime import timedelta
 from decimal import Decimal, ROUND_HALF_UP
 from functools import wraps
@@ -83,7 +84,7 @@ class PaypalProvider(BasicProvider):
     def set_response_links(self, payment, response):
         transaction = response['transactions'][0]
         related_resources = transaction['related_resources'][0]
-        resource_key = 'sale' if self._capture else 'authorization'
+        resource_key = 'sale' if self._capture else 'authorize'
         links = related_resources[resource_key]['links']
         extra_data = json.loads(payment.extra_data or '{}')
         extra_data['links'] = dict((link['rel'], link) for link in links)
@@ -103,7 +104,8 @@ class PaypalProvider(BasicProvider):
     def post(self, payment, *args, **kwargs):
         kwargs['headers'] = {
             'Content-Type': 'application/json',
-            'Authorization': self.access_token}
+            'Authorization': self.access_token
+        }
         if 'data' in kwargs:
             kwargs['data'] = json.dumps(kwargs['data'])
         response = requests.post(*args, **kwargs)
@@ -136,6 +138,12 @@ class PaypalProvider(BasicProvider):
             return extra_data.get('auth_response', {})
         return extra_data.get('response', {})
 
+    def basic_auth(self):
+        """Find basic auth, and returns base64 encoded
+        """
+        credentials = "%s:%s" % (self.client_id, self.secret)
+        return base64.b64encode(credentials.encode('utf-8')).decode('utf-8').replace("\n", "")
+
     def get_access_token(self, payment):
         last_auth_response = self.get_last_response(payment, is_auth=True)
         created = payment.created
@@ -147,12 +155,14 @@ class PaypalProvider(BasicProvider):
             return '%s %s' % (last_auth_response['token_type'],
                               last_auth_response['access_token'])
         else:
-            headers = {'Accept': 'application/json',
-                       'Accept-Language': 'en_US'}
+            headers = {
+                'Accept': 'application/json',
+                'Accept-Language': 'en_US',
+                'Authorization': "Basic %s" % self.basic_auth()
+            }
             post = {'grant_type': 'client_credentials'}
-            response = requests.post(self.oauth2_url, data=post,
-                                     headers=headers,
-                                     auth=(self.client_id, self.secret))
+            response = requests.post(url=self.oauth2_url, data=post,
+                                     headers=headers)
             response.raise_for_status()
             data = response.json()
             last_auth_response.update(data)
@@ -161,35 +171,33 @@ class PaypalProvider(BasicProvider):
 
     def get_transactions_items(self, payment):
         for purchased_item in payment.get_purchased_items():
-            price = purchased_item.price.quantize(
+            price = Decimal(purchased_item.price).quantize(
                 CENTS, rounding=ROUND_HALF_UP)
-            item = {'name': purchased_item.name[:127],
-                    'quantity': str(purchased_item.quantity),
-                    'price': str(price),
-                    'currency': purchased_item.currency,
-                    'sku': purchased_item.sku}
+            item = {
+                'name': purchased_item.name[:127],
+                'quantity': str(purchased_item.quantity),
+                'price': str(price),
+                'currency': purchased_item.currency,
+                'sku': purchased_item.sku
+            }
             yield item
 
     def get_transactions_data(self, payment):
         items = list(self.get_transactions_items(payment))
-        sub_total = (
-            payment.total - payment.delivery - payment.tax)
-        sub_total = sub_total.quantize(CENTS, rounding=ROUND_HALF_UP)
-        total = payment.total.quantize(CENTS, rounding=ROUND_HALF_UP)
-        tax = payment.tax.quantize(CENTS, rounding=ROUND_HALF_UP)
-        delivery = payment.delivery.quantize(
-            CENTS, rounding=ROUND_HALF_UP)
+        total = Decimal(payment.total).quantize(CENTS, rounding=ROUND_HALF_UP)
         data = {
             'intent': 'sale' if self._capture else 'authorize',
-            'transactions': [{'amount': {
-                'total': str(total),
-                'currency': payment.currency,
-                'details': {
-                    'subtotal': str(sub_total),
-                    'tax': str(tax),
-                    'shipping': str(delivery)}},
-                'item_list': {'items': items},
-                'description': payment.description}]}
+            'transactions': [
+                {
+                    'amount': {
+                        'total': str(total),
+                        'currency': payment.currency
+                    },
+                    'item_list': {'items': items},
+                    'description': payment.description
+                }
+            ]
+        }
         return data
 
     def get_product_data(self, payment, extra_data=None):
@@ -215,18 +223,14 @@ class PaypalProvider(BasicProvider):
 
     def process_data(self, payment, request):
         success_url = payment.get_success_url()
-        if not 'token' in request.GET:
-            return HttpResponseForbidden('FAILED')
-        payer_id = request.GET.get('PayerID')
+        payer_id = request.data.get('PayerID')
         if not payer_id:
-            if payment.status != PaymentStatus.CONFIRMED:
-                payment.change_status(PaymentStatus.REJECTED)
-                return payment.get_failure_url()
-            else:
-                return success_url
+            raise PaymentError("Cannot find PayerID. Payment: #%s" % payment.token)
+
         executed_payment = self.execute_payment(payment, payer_id)
         self.set_response_links(payment, executed_payment)
-        payment.attrs.payer_info = executed_payment['payer']['payer_info']
+        if 'payer' in executed_payment and 'payer_info' in executed_payment['payer']:
+            payment.attrs.payer_info = executed_payment['payer']['payer_info']
         if self._capture:
             payment.captured_amount = payment.total
             payment.change_status(PaymentStatus.CONFIRMED)
@@ -242,7 +246,11 @@ class PaypalProvider(BasicProvider):
     def execute_payment(self, payment, payer_id):
         post = {'payer_id': payer_id}
         links = self._get_links(payment)
-        execute_url = links['execute']['href']
+        if 'execute' in links and 'href' in links['execute']:
+            execute_url = links['execute']['href']
+        else:
+            raise PaymentError('Cannot find link payment excute. Payment #%s' % payment.token)
+
         return self.post(payment, execute_url, data=post)
 
     def get_amount_data(self, payment, amount=None):
