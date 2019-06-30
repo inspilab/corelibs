@@ -63,11 +63,11 @@ class PaypalProvider(BasicProvider):
         self.secret = secret
         self.client_id = client_id
         self.endpoint = endpoint
-        self.oauth2_url = self.endpoint + '/v1/oauth2/token'
-        self.payments_url = self.endpoint + '/v1/payments/payment'
-        self.payment_execute_url = self.payments_url + '/%(id)s/execute/'
+        self.oauth2_url = str(self.endpoint) + '/v1/oauth2/token'
+        self.payments_url = str(self.endpoint) + '/v1/payments/payment'
+        self.payment_execute_url = str(self.payments_url) + '/%(id)s/execute/'
         self.payment_refund_url = (
-            self.endpoint + '/v1/payments/capture/{captureId}/refund')
+            str(self.endpoint) + '/v1/payments/capture/{captureId}/refund')
         super(PaypalProvider, self).__init__(**kwargs)
 
     def set_response_data(self, payment, response, is_auth=False):
