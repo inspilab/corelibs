@@ -134,7 +134,7 @@ class BasePayment(models.Model):
         raise NotImplementedError()
 
     def get_process_url(self):
-        return reverse('process_payment', kwargs={'token': self.token})
+        return NotImplementedError()
 
     def capture(self, amount=None):
         if self.status != PaymentStatus.PREAUTH:
