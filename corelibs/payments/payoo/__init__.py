@@ -48,9 +48,9 @@ class PayooProvider(BasicProvider):
     def post(self, payment, *args, **kwargs):
         kwargs['headers'] = {
             'Content-Type': 'application/json',
-            # 'APIUsername': self.api_user_name,
-            # 'APIPassword': self.api_password,
-            # 'APISignature': self.api_signature,
+            'APIUsername': self.api_user_name,
+            'APIPassword': self.api_password,
+            'APISignature': self.api_signature,
         }
         if 'data' in kwargs:
             kwargs['data'] = json.dumps(kwargs['data'])
@@ -187,6 +187,7 @@ class PayooProvider(BasicProvider):
             raise PaymentError(str(e))
 
         # Process payment
+        payment.transaction_id = order_no
         payment.captured_amount = payment.total
         payment.change_status(PaymentStatus.CONFIRMED)
         return success_url
