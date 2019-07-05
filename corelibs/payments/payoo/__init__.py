@@ -48,9 +48,9 @@ class PayooProvider(BasicProvider):
     def post(self, payment, *args, **kwargs):
         kwargs['headers'] = {
             'Content-Type': 'application/json',
-            'APIUsername': self.api_user_name,
-            'APIPassword': self.api_password,
-            'APISignature': self.api_signature,
+            # 'APIUsername': self.api_user_name,
+            # 'APIPassword': self.api_password,
+            # 'APISignature': self.api_signature,
         }
         if 'data' in kwargs:
             kwargs['data'] = json.dumps(kwargs['data'])
@@ -63,23 +63,17 @@ class PayooProvider(BasicProvider):
             self.set_error_data(payment, data)
             logger.debug(data)
             message = 'Payoo error'
-            if response.status_code == 400:
-                error_data = response.json()
-                logger.warning(message, extra={
-                    'response': error_data,
-                    'status_code': response.status_code})
-                message = error_data.get('message', message)
-            else:
-                logger.warning(
-                    message, extra={'status_code': response.status_code})
+            error_data = json.dumps(response.json())
             payment.change_status(PaymentStatus.ERROR, message)
-            raise PaymentError(message)
+            raise PaymentError(error_data)
         else:
-            if 'result' in data and data['result'] != 'success':
-                message = data.get('message', message)
+            if 'result' in data and data['result'] == 'success':
+                self.set_response_data(payment, data)
+            else:
+                message = 'Payoo error'
                 payment.change_status(PaymentStatus.ERROR, message)
-                raise PaymentError(message)
-            self.set_response_data(payment, data)
+                error_data = json.dumps(response.json())
+                raise PaymentError(error_data)
         return payment
 
     def set_response_data(self, payment, data):
@@ -111,7 +105,7 @@ class PayooProvider(BasicProvider):
         order_xml += f'<shop_id>{self.shop_id}</shop_id>'
         order_xml += f'<shop_title>{self.shop_title}</shop_title>'
         order_xml += f'<shop_domain>{self.shop_domain}</shop_domain>'
-        order_xml += f'<shop_back_url>{self.shop_back_url}</shop_back_url>'
+        order_xml += f'<shop_back_url>{self.get_return_url(payment)}</shop_back_url>'
         order_xml += f'<order_no>{order_no}</order_no>'
         order_xml += f'<order_cash_amount>{order_cash_amount}</order_cash_amount>'
         order_xml += f'<order_ship_date>{order_ship_date}</order_ship_date>'
