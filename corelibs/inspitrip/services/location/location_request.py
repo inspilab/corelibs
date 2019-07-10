@@ -4,21 +4,21 @@ from requests.exceptions import HTTPError
 from .constants import CMS_API_URL
 
 
-class LocationBreadcrumRequest:
+class LocationBreadcrumbRequest:
     @classmethod
-    def location_breadcrum_url(cls, location_code):
-        url = "%s/api/location-pages/%s/breadcrum" % (
+    def location_breadcrumb_url(cls, location_code):
+        url = "%s/api/location-pages/%s/breadcrumb" % (
             CMS_API_URL, location_code
         )
         return url
 
     @classmethod
-    def get_breadcrum(cls, location_code):
+    def get_breadcrumb(cls, location_code):
         headers = {
             "Content-Type": "application/json",
             "Accept": "application/json",
         }
-        url = cls.location_breadcrum_url(location_code)
+        url = cls.location_breadcrumb_url(location_code)
         try:
             res = requests.get(url, headers=headers)
             res.raise_for_status()

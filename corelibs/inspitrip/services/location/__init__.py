@@ -1,7 +1,7 @@
-from .location_request import LocationBreadcrumRequest
+from .location_request import LocationBreadcrumbRequest
 
 
-class Location(LocationBreadcrumRequest):
+class Location(LocationBreadcrumbRequest):
     """
     Add class actions for location here
     """
