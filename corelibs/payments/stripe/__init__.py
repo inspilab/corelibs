@@ -50,7 +50,7 @@ class StripeProvider(BasicProvider):
                 coefficient = self.get_coefficient(currency_code=payment.currency)
                 self.charge = stripe.Charge.create(
                     capture=False,
-                    amount=int(payment.total) * int(coefficient),
+                    amount=Decimal(payment.total) * int(coefficient),
                     currency=payment.currency,
                     customer=customer.customer_id)
             except Exception as e:
@@ -68,7 +68,7 @@ class StripeProvider(BasicProvider):
 
     def capture(self, payment, amount=None):
         coefficient = self.get_coefficient(currency_code=payment.currency)
-        amount = int(amount or payment.total) * int(coefficient)
+        amount = Decimal(amount or payment.total) * int(coefficient)
         charge = stripe.Charge.retrieve(payment.transaction_id)
         try:
             charge.capture(amount=amount)
@@ -85,7 +85,7 @@ class StripeProvider(BasicProvider):
 
     def refund(self, payment, amount=None):
         coefficient = self.get_coefficient(currency_code=payment.currency)
-        amount = int(amount or payment.total) * int(coefficient)
+        amount = Decimal(amount or payment.total) * int(coefficient)
         charge = stripe.Charge.retrieve(payment.transaction_id)
         charge.refund(amount=amount)
         payment.attrs.refund = json.dumps(charge)
