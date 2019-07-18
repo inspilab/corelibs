@@ -48,9 +48,10 @@ class StripeProvider(BasicProvider):
                     raise Exception("Update customer failed", error)
 
                 coefficient = self.get_coefficient(currency_code=payment.currency)
+                amount_charge = int(payment.total * coefficient)
                 self.charge = stripe.Charge.create(
                     capture=False,
-                    amount=Decimal(payment.total) * int(coefficient),
+                    amount=amount_charge,
                     currency=payment.currency,
                     customer=customer.customer_id)
             except Exception as e:
@@ -68,7 +69,7 @@ class StripeProvider(BasicProvider):
 
     def capture(self, payment, amount=None):
         coefficient = self.get_coefficient(currency_code=payment.currency)
-        amount = Decimal(amount or payment.total) * int(coefficient)
+        amount = int((amount or payment.total) * coefficient)
         charge = stripe.Charge.retrieve(payment.transaction_id)
         try:
             charge.capture(amount=amount)
@@ -76,7 +77,7 @@ class StripeProvider(BasicProvider):
             payment.change_status(PaymentStatus.REFUNDED)
             raise PaymentError('Payment already refunded')
         payment.attrs.capture = json.dumps(charge)
-        return Decimal(amount) / int(coefficient)
+        return Decimal(amount) / coefficient
 
     def release(self, payment):
         charge = stripe.Charge.retrieve(payment.transaction_id)
@@ -85,11 +86,11 @@ class StripeProvider(BasicProvider):
 
     def refund(self, payment, amount=None):
         coefficient = self.get_coefficient(currency_code=payment.currency)
-        amount = Decimal(amount or payment.total) * int(coefficient)
+        amount = int((amount or payment.total) * coefficient)
         charge = stripe.Charge.retrieve(payment.transaction_id)
         charge.refund(amount=amount)
         payment.attrs.refund = json.dumps(charge)
-        return Decimal(amount) / int(coefficient)
+        return Decimal(amount) / coefficient
 
     def _create_or_update_customer(self, email, method, token_id):
         stripe.api_key = self.secret_key

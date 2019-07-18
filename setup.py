@@ -8,7 +8,7 @@ README = open(os.path.join(here, 'README.md')).read()
 
 setup(
     name='corelibs',
-    version='1.4.25',
+    version='1.4.26',
     packages=[
         'corelibs',
         'corelibs.pubsub',
