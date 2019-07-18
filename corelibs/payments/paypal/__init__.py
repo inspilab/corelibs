@@ -202,9 +202,9 @@ class PaypalProvider(BasicProvider):
 
     def get_product_data(self, payment, extra_data=None):
         return_url = self.get_return_url(payment)
+        cancel_url = self.get_cancel_url(payment)
         data = self.get_transactions_data(payment)
-        data['redirect_urls'] = {'return_url': return_url,
-                                 'cancel_url': return_url}
+        data['redirect_urls'] = {'return_url': return_url, 'cancel_url': cancel_url}
         data['payer'] = {'payment_method': 'paypal'}
         return data
 

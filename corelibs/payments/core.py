@@ -107,6 +107,14 @@ class BasicProvider(object):
             return url + '?' + qs
         return url
 
+    def get_cancel_url(self, payment, extra_data=None):
+        payment_link = payment.get_failure_url()
+        url = payment_link
+        if extra_data:
+            qs = urlencode(extra_data)
+            return url + '?' + qs
+        return url
+
     def capture(self, payment, amount=None):
         raise NotImplementedError()
 
