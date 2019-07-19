@@ -13,10 +13,11 @@ class BookingItemRequest:
         return url
 
     @classmethod
-    def get_booking_item(cls, id):
+    def get_booking_item(cls, id, token):
         headers = {
             "Content-Type": "application/json",
             "Accept": "application/json",
+            "Authorization": token
         }
         url = cls.booking_item_url(id)
         try:
