@@ -8,7 +8,7 @@ README = open(os.path.join(here, 'README.md')).read()
 
 setup(
     name='corelibs',
-    version='1.4.26',
+    version='1.4.28',
     packages=[
         'corelibs',
         'corelibs.pubsub',
@@ -19,6 +19,7 @@ setup(
         'corelibs.inspitrip.services',
         'corelibs.inspitrip.services.product',
         'corelibs.inspitrip.services.location',
+        'corelibs.inspitrip.services.booking',
 
         'corelibs.payments',
         'corelibs.payments.bank',
