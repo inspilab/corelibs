@@ -6,20 +6,20 @@ from .constants import BOOKING_API_URL
 
 class BookingItemRequest:
     @classmethod
-    def booking_item_url(cls, id):
-        url = "%s/api/booking-items/%s" % (
-            BOOKING_API_URL, id
+    def booking_item_url(cls, bid, booking_item_id):
+        url = "%s/api/bookings/%s/items/%s" % (
+            BOOKING_API_URL, bid, booking_item_id
         )
         return url
 
     @classmethod
-    def get_booking_item(cls, id, token):
+    def get_booking_item(cls, bid, booking_item_id, token):
         headers = {
             "Content-Type": "application/json",
             "Accept": "application/json",
             "Authorization": token
         }
-        url = cls.booking_item_url(id)
+        url = cls.booking_item_url(bid, booking_item_id)
         try:
             res = requests.get(url, headers=headers)
             res.raise_for_status()
