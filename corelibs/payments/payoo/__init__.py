@@ -131,7 +131,7 @@ class PayooProvider(BasicProvider):
             'data': order_xml,
             'checksum': checksum,
             'refer': self.shop_domain,
-            'pm' => self.method_default
+            'pm': self.method_default
         }
         return data
 
