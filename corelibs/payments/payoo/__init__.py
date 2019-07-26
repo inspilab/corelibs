@@ -28,7 +28,7 @@ class PayooProvider(BasicProvider):
     def __init__(
             self, secret_key, username, shop_id, shop_title, shop_domain, shop_back_url,
             notify_url, check_out_url, api_user_name, api_password, api_signature,
-            order_ship_days, method_default
+            order_ship_days, method_default,
             **kwargs
         ):
         self.secret_key = secret_key
