@@ -8,6 +8,6 @@ class EVENT_TYPE:
     BOOKING_REMIND_FEEDBACK = 'booking-remind-feedback'
     LOCAL_BOOKING_CONFIRM = 'local-booking-confirm'
     USER_RESET_PASSWORD = 'user-reset-password'
-    USER_ACTIVE = 'user-activate'
+    USER_ACTIVATE = 'user-activate'
     USER_WELCOME = 'user-welcome'
 
