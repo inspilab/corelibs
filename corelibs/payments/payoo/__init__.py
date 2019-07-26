@@ -28,7 +28,7 @@ class PayooProvider(BasicProvider):
     def __init__(
             self, secret_key, username, shop_id, shop_title, shop_domain, shop_back_url,
             notify_url, check_out_url, api_user_name, api_password, api_signature,
-            order_ship_days,
+            order_ship_days, method_default
             **kwargs
         ):
         self.secret_key = secret_key
@@ -43,6 +43,7 @@ class PayooProvider(BasicProvider):
         self.api_password = api_password
         self.api_signature = api_signature
         self.order_ship_days = int(order_ship_days or 1)
+        self.method_default = method_default or 'bank-payment'
         super(PayooProvider, self).__init__(**kwargs)
 
     def post(self, payment, *args, **kwargs):
@@ -129,7 +130,8 @@ class PayooProvider(BasicProvider):
         data = {
             'data': order_xml,
             'checksum': checksum,
-            'refer': self.shop_domain
+            'refer': self.shop_domain,
+            'pm' => self.method_default
         }
         return data
 
