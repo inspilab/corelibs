@@ -14,9 +14,13 @@ class TestCoupon(unittest.TestCase):
             'code': 'COUPON20',
             'count_by': 'percent',
             'value': 20,
+            'value_max': 20,
             'currency_code': 'USD',
             'language': 'en',
             'country': '',
+            'product_included': [1,2,3],
+            'product_excluded': [1,2,3],
+            'price_min': 100,
             'message': 'Message',
         }
 
@@ -30,9 +34,7 @@ class TestCoupon(unittest.TestCase):
 
         # Send request
         response = Product.get_coupon(
-            product_pk=123,
             code='COUPON20',
-            amount=100,
             language='en',
             country='',
             currency_code='USD'
@@ -49,9 +51,7 @@ class TestCoupon(unittest.TestCase):
         # Send request
         with self.assertRaises(HTTPError) as context:
             response = Product.get_coupon(
-                product_pk=123,
                 code='COUPON20',
-                amount=100,
                 language='en',
                 country='',
                 currency_code='USD'
@@ -67,9 +67,7 @@ class TestCoupon(unittest.TestCase):
         # Send request
         with self.assertRaises(HTTPError) as context:
             response = Product.get_coupon(
-                product_pk=123,
                 code='COUPON20',
-                amount=100,
                 language='en',
                 country='',
                 currency_code='USD'
