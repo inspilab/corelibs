@@ -42,7 +42,13 @@ def get_current_user():
 
 
 def get_current_authenticated_user():
+    '''
+    Return User, Anonymous or None (System)
+    '''
     current_user = get_current_user()
     if isinstance(current_user, AnonymousUser):
-        return None
-    return current_user
+        return AnonymousUser
+    elif current_user:
+        return current_user
+
+    return None
