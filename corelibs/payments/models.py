@@ -45,10 +45,7 @@ class BasePayment(models.Model):
         _('fraud check'), max_length=10, choices=FraudStatus.CHOICES,
         default=FraudStatus.UNKNOWN)
     fraud_message = models.TextField(blank=True, default='')
-    #: Creation date and time
-    created = models.DateTimeField(auto_now_add=True)
-    #: Date and time of last modification
-    modified = models.DateTimeField(auto_now=True)
+
     #: Transaction ID (if applicable)
     transaction_id = models.CharField(max_length=255, blank=True)
     #: Currency code (may be provider-specific)

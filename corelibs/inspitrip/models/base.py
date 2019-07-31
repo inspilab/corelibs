@@ -3,8 +3,10 @@ from __future__ import unicode_literals
 from datetime import datetime
 from django.db import models
 from django.conf import settings
+from raven.contrib.django.raven_compat.models import client
 from corelibs.middleware.current_user import get_current_authenticated_user
 from corelibs.log import Logging
+
 from .constants import (
     LOGGING_HISTORY_MODEL, ACTION_DELETE, ACTION_CREATE, ACTION_UPDATE,
     IGNORE_FIELDS, LANGUAGE_FALLBACK, COUNTRY_FALLBACK, CURRENCY_FALLBACK
@@ -51,47 +53,50 @@ class LogMixin(models.Model):
         }
 
     def _log_data(self, action_flag, old, new):
-        log_data = {}
-        extra_data = []
-        cls = self.__class__
-        user = get_current_authenticated_user()
-        actor_type = 'user' if user else 'system'
-        if action_flag == ACTION_UPDATE:
-            for field in cls._meta.get_fields():
-                field_name = field.name
-                if field_name in IGNORE_FIELDS:
-                    continue
+        try:
+            log_data = {}
+            extra_data = []
+            cls = self.__class__
+            user = get_current_authenticated_user()
+            actor_type = 'user' if user else 'system'
+            if action_flag == ACTION_UPDATE:
+                for field in cls._meta.get_fields():
+                    field_name = field.name
+                    if field_name in IGNORE_FIELDS:
+                        continue
 
-                try:
-                    if old and new and getattr(old, field_name) != getattr(new, field_name):
-                        extra_data.append(
-                            {field_name: str(getattr(new, field_name))}
-                        )
-                except Exception as e:
-                    print(e)
+                    try:
+                        if old and new and getattr(old, field_name) != getattr(new, field_name):
+                            extra_data.append(
+                                {field_name: str(getattr(new, field_name))}
+                            )
+                    except Exception as e:
+                        print(e)
 
-            if len(extra_data) > 0:
+                if len(extra_data) > 0:
+                    log_data = self._build_log_data(
+                        actor_type=actor_type, actor=user, content_type=cls.__name__,
+                        content_object_id=new.pk, action_flag=action_flag,
+                        extra_data=extra_data, message=''
+                    )
+
+            elif action_flag == ACTION_DELETE:
+                log_data = self._build_log_data(
+                    actor_type=actor_type, actor=user, content_type=cls.__name__,
+                    content_object_id=old.pk, action_flag=action_flag,
+                    extra_data=extra_data, message=''
+                )
+            elif action_flag == ACTION_CREATE:
                 log_data = self._build_log_data(
                     actor_type=actor_type, actor=user, content_type=cls.__name__,
                     content_object_id=new.pk, action_flag=action_flag,
                     extra_data=extra_data, message=''
                 )
 
-        elif action_flag == ACTION_DELETE:
-            log_data = self._build_log_data(
-                actor_type=actor_type, actor=user, content_type=cls.__name__,
-                content_object_id=old.pk, action_flag=action_flag,
-                extra_data=extra_data, message=''
-            )
-        elif action_flag == ACTION_CREATE:
-            log_data = self._build_log_data(
-                actor_type=actor_type, actor=user, content_type=cls.__name__,
-                content_object_id=new.pk, action_flag=action_flag,
-                extra_data=extra_data, message=''
-            )
-
-        logging = Logging()
-        logging.send_log(log_data)
+            logging = Logging()
+            logging.send_log(log_data)
+        except Exception as e:
+            client.captureException()
 
     def delete(self, *args, **kwargs):
         old = self.__class__.objects.filter(pk=self.pk).first()
