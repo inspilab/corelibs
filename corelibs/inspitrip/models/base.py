@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 from datetime import datetime
 from django.db import models
 from django.conf import settings
-from .utils import get_current_authenticated_user
+from corelibs.middleware.current_user import get_current_authenticated_user
 from corelibs.log import Logging
 from .constants import (
     LOGGING_HISTORY_MODEL, ACTION_DELETE, ACTION_CREATE, ACTION_UPDATE,
