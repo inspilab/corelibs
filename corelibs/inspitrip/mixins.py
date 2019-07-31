@@ -10,4 +10,3 @@ class EVENT_TYPE:
     USER_RESET_PASSWORD = 'user-reset-password'
     USER_ACTIVATE = 'user-activate'
     USER_WELCOME = 'user-welcome'
-
