@@ -3,16 +3,22 @@ from __future__ import unicode_literals
 from datetime import datetime
 from django.db import models
 from django.conf import settings
-from corelibs.middleware import get_current_authenticated_user
+from .utils import get_current_authenticated_user
 from corelibs.log import Logging
 from .constants import (
     LOGGING_HISTORY_MODEL, ACTION_DELETE, ACTION_CREATE, ACTION_UPDATE,
-    IGNORE_FIELDS
+    IGNORE_FIELDS, LANGUAGE_FALLBACK, COUNTRY_FALLBACK, CURRENCY_FALLBACK
 )
 
-
 class Mixin(models.Model):
+    created = models.DateTimeField(auto_now_add=True, db_index=True)
+    modified = models.DateTimeField(auto_now=True, db_index=True)
 
+    class Meta:
+        abstract = True
+
+
+class LogMixin(models.Model):
     created = models.DateTimeField(auto_now_add=True, db_index=True)
     modified = models.DateTimeField(auto_now=True, db_index=True)
 
@@ -90,7 +96,7 @@ class Mixin(models.Model):
     def delete(self, *args, **kwargs):
         old = self.__class__.objects.filter(pk=self.pk).first()
         new = self
-        super(Mixin, self).delete(*args, **kwargs)
+        super(LogMixin, self).delete(*args, **kwargs)
 
         if LOGGING_HISTORY_MODEL:
             self._log_data(action_flag=ACTION_DELETE, old=old, new=new)
@@ -99,7 +105,23 @@ class Mixin(models.Model):
         action_flag = ACTION_UPDATE if self.pk else ACTION_CREATE
         old = self.__class__.objects.filter(pk=self.pk).first()
         new = self
-        super(Mixin, self).save(*args, **kwargs)
+        super(LogMixin, self).save(*args, **kwargs)
 
         if LOGGING_HISTORY_MODEL:
             self._log_data(action_flag=action_flag, old=old, new=new)
+
+
+class MultilingualMixin(models.Model):
+    language = models.CharField(max_length=10, default=LANGUAGE_FALLBACK)
+    country = models.CharField(
+        max_length=10, default=COUNTRY_FALLBACK, null=False, blank=True)
+
+    class Meta:
+        abstract = True
+
+
+class MultiCurrenciesMixin(models.Model):
+    currency_code = models.CharField(max_length=3, default=CURRENCY_FALLBACK)
+
+    class Meta:
+        abstract = True

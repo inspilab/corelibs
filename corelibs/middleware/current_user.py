@@ -1,8 +1,7 @@
-from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
 from threading import local
 
-USER_ATTR_NAME = getattr(settings, 'LOCAL_USER_ATTR_NAME', '_current_user')
+from .constants import USER_ATTR_NAME
 
 _thread_locals = local()
 
