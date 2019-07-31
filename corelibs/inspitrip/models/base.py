@@ -6,8 +6,6 @@ from django.conf import settings
 from corelibs.middleware import get_current_authenticated_user
 from corelibs.log import Logging
 from .constants import (
-    GOOGLE_CLOUD_PROJECT, GOOGLE_BIGTABLE_INSTANCE,
-    GOOGLE_BIGTABLE_TABLE, GOOGLE_BIGTABLE_COLUMN_FAMILY,
     LOGGING_HISTORY_MODEL
 )
 
@@ -66,12 +64,7 @@ class Mixin(models.Model):
                 'data': []
             }
 
-        logging = Logging(
-            project_id=GOOGLE_CLOUD_PROJECT,
-            instance_id=GOOGLE_BIGTABLE_INSTANCE,
-            table_id=GOOGLE_BIGTABLE_TABLE,
-            column_family_id=GOOGLE_BIGTABLE_COLUMN_FAMILY
-        )
+        logging = Logging()
         logging.send_log(log_data)
 
     def save(self, *args, **kwargs):
