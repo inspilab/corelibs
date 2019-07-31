@@ -6,14 +6,14 @@ from .constants import PRODUCT_API_URL
 
 class CouponRequest:
     @classmethod
-    def coupon_url(cls, code, amount, product_pk):
-        url = "%s/api/coupons/%s?price=%s&experience=%s" % (
-            PRODUCT_API_URL, code, amount, product_pk
+    def coupon_url(cls, code):
+        url = "%s/api/coupons/%s" % (
+            PRODUCT_API_URL, code
         )
         return url
 
     @classmethod
-    def get_coupon(cls, product_pk, code, amount, language, country, currency_code):
+    def get_coupon(cls, code, language, country, currency_code):
         headers = {
             "Content-Type": "application/json",
             "Accept": "application/json",
@@ -21,7 +21,7 @@ class CouponRequest:
             "X-Country": country,
             "X-Currency": currency_code,
         }
-        url = cls.coupon_url(code, amount, product_pk)
+        url = cls.coupon_url(code)
         try:
             res = requests.get(url, headers=headers)
             res.raise_for_status()
