@@ -21,11 +21,12 @@ class Publisher():
         )
 
     def publish(self, data):
-        print('Publish messages on {}'.format(self.topic_path))
         data = self.handle_data(data)
         message_future = self.publisher.publish(self.topic_path, data=data)
         message_future.add_done_callback(self.callback)
-        return message_future.result()
+        result = message_future.result()
+        print('Publish messages on {}'.format(self.topic_path))
+        return result
 
     def callback(self, message_future):
         # When timeout is unspecified, the exception method waits indefinitely.

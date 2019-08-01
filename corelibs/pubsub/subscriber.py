@@ -64,6 +64,7 @@ class Subscriber():
             message.ack()
             return result
         except Exception as ex:
+            print(ex, message)
             self.handle_error(ex, message)
 
     def handle_data(self, data):

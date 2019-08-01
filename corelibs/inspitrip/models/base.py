@@ -11,6 +11,8 @@ from .constants import (
     LOGGING_HISTORY_MODEL, ACTION_DELETE, ACTION_CREATE, ACTION_UPDATE,
     IGNORE_FIELDS, LANGUAGE_FALLBACK, COUNTRY_FALLBACK, CURRENCY_FALLBACK
 )
+from .publishers import publish_log_data
+
 
 class Mixin(models.Model):
     created = models.DateTimeField(auto_now_add=True, db_index=True)
@@ -93,8 +95,9 @@ class LogMixin(models.Model):
                     extra_data=extra_data, message=''
                 )
 
-            logging = Logging()
-            logging.send_log(log_data)
+            if log_data and len(log_data.items()) > 0:
+                publish_log_data(log_data)
+
         except Exception as e:
             client.captureException()
 
