@@ -13,7 +13,7 @@ ACTION_DELETE = 'DELETE'
 ACTION_CREATE = 'CREATE'
 ACTION_UPDATE = 'UPDATE'
 ACTION_NOTE = 'NOTE'
-IGNORE_FIELDS = ['created', 'modified']
+IGNORE_FIELDS = ['created', 'modified', 'extra_data']
 
 LANGUAGE_FALLBACK = 'en'
 COUNTRY_FALLBACK = ''
