@@ -9,7 +9,7 @@ from django.urls import resolve
 from django.utils.deprecation import MiddlewareMixin
 from rest_framework.renderers import JSONRenderer
 from .constants import (
-    GOOGLE_CLOUD_PROJECT, GOOGLE_DATASTORE_KIND
+    GOOGLE_CLOUD_PROJECT, GOOGLE_DATASTORE_KIND, LOG_LIMIT
 )
 
 
@@ -19,6 +19,7 @@ class Logging(object):
         self._project_id = GOOGLE_CLOUD_PROJECT
         self._kind = GOOGLE_DATASTORE_KIND
         self._client = datastore.Client()
+        self._limit = LOG_LIMIT
 
     def send_log(self, data):
         timestamp = str(int(datetime.timestamp(datetime.utcnow())))
@@ -39,7 +40,7 @@ class Logging(object):
 
         return False
 
-    def get_log(self, filters=None):
+    def get_log(self, filters=None, page=None):
         query = self._client.query(kind=self._kind)
 
         if filters:
@@ -49,7 +50,12 @@ class Logging(object):
                     query.add_filter(item.get('field'), item.get('operator'), item.get('value'))
 
         try:
-            results = list(query.fetch())
+            if page:
+                offset = (int(page) - 1) * self._limit
+                results = list(query.fetch(limit=self._limit, offset=offset))
+            else:
+                results = list(query.fetch())
+
             return results
         except Exception as e:
             client.captureException("Cannot fetch log from datastore. Error: %s" % str(e))

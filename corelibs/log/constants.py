@@ -9,3 +9,4 @@ def default(var_name, value):
 
 GOOGLE_CLOUD_PROJECT = default('GOOGLE_CLOUD_PROJECT', '')
 GOOGLE_DATASTORE_KIND = default('GOOGLE_DATASTORE_KIND', '')
+LOG_LIMIT = default('LOG_LIMIT', 50)
