@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 
+import threading
 from datetime import datetime
 from django.db import models
 from django.conf import settings
@@ -96,7 +97,8 @@ class LogMixin(models.Model):
                 )
 
             if log_data and len(log_data.items()) > 0:
-                publish_log_data(log_data)
+                thread_func = threading.Thread(target=publish_log_data, args=(log_data,))
+                thread_func.start()
 
         except Exception as e:
             client.captureException()
