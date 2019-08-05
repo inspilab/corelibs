@@ -46,7 +46,9 @@ class AuthenticationBase(BaseAuthentication):
             return None
         payload = self.valid_request(request, jwt_token)
         if payload and 'username' in payload and 'user_id' in payload:
-            user = self.authenticate_credentials(payload, jwt_token)
+            language = request.META.get('HTTP_X_LANGUAGE')
+            country = request.META.get('HTTP_X_COUNTRY')
+            user = self.authenticate_credentials(payload, jwt_token, language, country)
             if user:
                 user_data = UserStruct(
                     username=user['email'],

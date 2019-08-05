@@ -7,6 +7,8 @@ from django.conf import settings
 from raven.contrib.django.raven_compat.models import client
 from corelibs.middleware.current_user import get_current_authenticated_user
 from corelibs.log import Logging
+from django.core.cache import cache
+from django.shortcuts import get_object_or_404
 
 from .constants import (
     LOGGING_HISTORY_MODEL, ACTION_DELETE, ACTION_CREATE, ACTION_UPDATE,
@@ -135,3 +137,32 @@ class MultiCurrenciesMixin(models.Model):
 
     class Meta:
         abstract = True
+
+
+class CacheMixin(models.Model):
+
+    class Meta:
+        abstract = True
+
+    @classmethod
+    def get_cache_key(cls, key):
+        class_name = cls.__name__.lower()
+        return f"{class_name}:{key}"
+
+    @classmethod
+    def flush(cls, key):
+        cache_key = cls.get_cache_key(key)
+        cache.delete(cache_key)  # Can also "delete_many"
+
+    @classmethod
+    def get_or_cache(cls, pk):
+        cache_key = cls.get_cache_key(pk)
+        instance = cache.get(cache_key)
+
+        if instance:
+            return instance
+
+        instance = get_object_or_404(self.model, pk=pk)
+        cache.set(cache_key, instance)
+
+        return instance

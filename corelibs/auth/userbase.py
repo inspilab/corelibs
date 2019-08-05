@@ -26,7 +26,7 @@ class UserAuthentication(AuthenticationBase):
 
     """
 
-    def authenticate_credentials(self, payload, jwt_token=None):
+    def authenticate_credentials(self, payload, jwt_token=None, language=None, country=None):
         """
         Returns an active user from userbase service.
         """
@@ -39,6 +39,11 @@ class UserAuthentication(AuthenticationBase):
         headers = {
             "Authorization": "%s %s" % (api_settings.JWT_AUTH_HEADER_PREFIX, token)
         }
+        if language:
+            headers['X-Language'] = language
+        if country or country == '':
+            headers['X-Country'] = country
+
         response = requests.get(url, headers=headers)
         if response.status_code == status.HTTP_200_OK and response.text:
             if isinstance(response.text, str):
