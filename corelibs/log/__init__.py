@@ -41,7 +41,7 @@ class Logging(object):
         return False
 
     def get_log(self, filters=None, page=None):
-        query = self._client.query(kind=self._kind)
+        query = self._client.query(kind=self._kind, order=('-action_time',))
 
         if filters:
             for item in filters:
