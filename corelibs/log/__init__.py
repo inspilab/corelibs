@@ -41,7 +41,7 @@ class Logging(object):
         return False
 
     def get_log(self, filters=None, page=None):
-        query = self._client.query(kind=self._kind, order=('-action_time',))
+        query = self._client.query(kind=self._kind)
 
         if filters:
             for item in filters:
@@ -56,6 +56,7 @@ class Logging(object):
             else:
                 results = list(query.fetch())
 
+            results = sorted(results, key = lambda i: i['action_time'], reverse=True)
             return results
         except Exception as e:
             client.captureException("Cannot fetch log from datastore. Error: %s" % str(e))
