@@ -56,7 +56,6 @@ class Logging(object):
             else:
                 results = list(query.fetch())
 
-            results = sorted(results, key = lambda i: i['action_time'], reverse=True)
             return results
         except Exception as e:
             client.captureException("Cannot fetch log from datastore. Error: %s" % str(e))
