@@ -21,9 +21,7 @@ class ThumbnailImgixSerializer(serializers.ImageField):
         super(ThumbnailImgixSerializer, self).__init__(**kwargs)
 
     def to_representation(self, instance):
-        if instance and hasattr(instance, 'url'):
-            return get_imgix(image_url=instance.url, alias=self.alias)
-        elif instance:
-            return get_imgix(image_url=instance, alias=self.alias)
+        if instance:
+            return get_imgix(image_url=str(instance), alias=self.alias)
 
         return ''
