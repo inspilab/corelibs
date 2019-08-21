@@ -10,21 +10,22 @@ class TestCoupon(unittest.TestCase):
 
     def setUp(self):
         self.response_data = {
-            'id': 123,
-            'code': 'COUPON20',
-            'count_by': 'percent',
-            'value': 20,
-            'value_max': 20,
+            'discount_code': 'COUPON20',
+            'discount': 50,
             'currency_code': 'USD',
             'language': 'en',
             'country': '',
-            'product_included': [1,2,3],
-            'product_excluded': [1,2,3],
-            'price_min': 100,
-            'message': 'Message',
+            'items': [
+                {
+                    'item': 123,
+                    'experience': 189,
+                    'discount': 50,
+                    'discount_code': 'COUPON20'
+                }
+            ]
         }
 
-    @patch('requests.get')
+    @patch('requests.put')
     def test_get_coupon(self, mock_get):
         # Mock response
         mock_resp = requests.models.Response()
@@ -37,11 +38,13 @@ class TestCoupon(unittest.TestCase):
             code='COUPON20',
             language='en',
             country='',
-            currency_code='USD'
+            currency_code='USD',
+            token='',
+            data={}
         )
         self.assertEqual(response, self.response_data)
 
-    @patch('requests.get')
+    @patch('requests.put')
     def test_get_coupon_bad_request(self, mock_get):
         # Mock response
         mock_resp = requests.models.Response()
@@ -54,10 +57,12 @@ class TestCoupon(unittest.TestCase):
                 code='COUPON20',
                 language='en',
                 country='',
-                currency_code='USD'
+                currency_code='USD',
+                token='',
+                data={}
             )
 
-    @patch('requests.get')
+    @patch('requests.put')
     def test_get_coupon_connection_error(self, mock_get):
         # Mock response
         mock_resp = requests.models.Response()
@@ -70,5 +75,7 @@ class TestCoupon(unittest.TestCase):
                 code='COUPON20',
                 language='en',
                 country='',
-                currency_code='USD'
+                currency_code='USD',
+                token='',
+                data={}
             )
