@@ -17,14 +17,17 @@ class CouponRequest:
         headers = {
             "Content-Type": "application/json",
             "Accept": "application/json",
-            "Authorization": kwargs.get('token'),
             "X-Language": kwargs.get('language'),
             "X-Country": kwargs.get('country'),
             "X-Currency": kwargs.get('currency_code'),
         }
+        token = kwargs.get('token')
+        if token:
+            headers["Authorization"] = token
+
         url = cls.coupon_url(kwargs.get('code'))
         try:
-            res = requests.put(url, data=kwargs.get('data'), headers=headers)
+            res = requests.put(url, data=json.dumps(kwargs.get('data')), headers=headers)
             res.raise_for_status()
         except HTTPError as http_e:
             # Status is NOT 2xx
