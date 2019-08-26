@@ -147,7 +147,7 @@ class CacheMixin(models.Model):
     @classmethod
     def get_cache_key(cls, key):
         class_name = cls.__name__.lower()
-        return f"{class_name}:{key}"
+        return "%s:%s" % (class_name, key)
 
     @classmethod
     def flush(cls, key):
