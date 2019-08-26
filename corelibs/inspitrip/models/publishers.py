@@ -1,16 +1,12 @@
 from raven.contrib.django.raven_compat.models import client
 
-from corelibs.pubsub import Publisher
-from .constants import GOOGLE_PUBSUB_LOG_TOPIC
-from corelibs.log.serializers import LogSerializer
+from corelibs.log import Logging
 
 
-def publish_log_data(data):
+def send_log_data(data):
     try:
-        serializer = LogSerializer(data=data)
-        serializer.is_valid(raise_exception=True)
-        publisher = Publisher(GOOGLE_PUBSUB_LOG_TOPIC)
-        publisher.publish(serializer.data)
+        logging = Logging()
+        results = logging.send_log(data)
         return True
     except Exception as e:
         print(e)

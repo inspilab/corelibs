@@ -14,7 +14,7 @@ from .constants import (
     LOGGING_HISTORY_MODEL, ACTION_DELETE, ACTION_CREATE, ACTION_UPDATE,
     IGNORE_FIELDS, LANGUAGE_FALLBACK, COUNTRY_FALLBACK, CURRENCY_FALLBACK
 )
-from .publishers import publish_log_data
+from .publishers import send_log_data
 
 
 class Mixin(models.Model):
@@ -99,7 +99,7 @@ class LogMixin(models.Model):
                 )
 
             if log_data and len(log_data.items()) > 0:
-                thread_func = threading.Thread(target=publish_log_data, args=(log_data,))
+                thread_func = threading.Thread(target=send_log_data, args=(log_data,))
                 thread_func.start()
 
         except Exception as e:
