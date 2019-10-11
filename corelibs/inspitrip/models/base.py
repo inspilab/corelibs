@@ -46,7 +46,7 @@ class LogMixin(models.Model):
             'action_time': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%fZ'),
             'action_date': datetime.utcnow().date().strftime('%Y-%m-%d'),
             'actor_type': actor_type,
-            'actor_id': actor.id if actor and actor.id else '',
+            'actor_id': actor.id if actor and actor.id else None,
             'actor_email': actor.email if actor and hasattr(actor, 'email') and actor.email else '',
             'actor_name': actor_name,
             'actor_photo': actor.photo if actor and hasattr(actor, 'photo') and actor.photo else '',
