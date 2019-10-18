@@ -6,6 +6,7 @@ from uuid import uuid4
 from django.db import models
 from django.urls import reverse
 from django.utils.translation import ugettext_lazy as _
+from django.contrib.postgres.fields.jsonb import JSONField
 
 from . import FraudStatus, PaymentStatus, get_payment_method_model
 from .core import ProviderFactory
@@ -189,4 +190,4 @@ class BaseMethod(models.Model):
 
     language = models.CharField(max_length=50)
     country = models.CharField(max_length=50, blank=True)
-    currency = models.CharField(max_length=50)
+    currency = models.CharField(max_length=50, default='USD')

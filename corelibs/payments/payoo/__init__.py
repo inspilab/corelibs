@@ -9,6 +9,8 @@ except ImportError:
     from urllib import urlencode, quote_plus
 from django.http import HttpResponseRedirect
 
+import xmltodict
+import base64
 from datetime import datetime, timedelta
 import logging
 import requests
@@ -64,8 +66,24 @@ class PayooProvider(BasicProvider, ValidateProvider, PayooAdapter):
         payment.change_status(PaymentStatus.WAITING)
         raise RedirectNeeded(redirected_to_url)
 
-    def transform_data(self, request, option=None):
+    def _transform_data_ipn(self, request):
+        data = xmltodict.parse(request.data)
+        product_data base64.b64encode(encoded_product_data.encode('utf-8')).decode('utf-8').replace("\n", "")
+        self._validate_checksum_ipn(data)
+
+        return product_data
+
+    def _transform_data_callback(self, request):
         data = request.data.copy()
+        self._validate_checksum_callback(data)
+        return data
+
+    def transform_data(self, request, option=None):
+        if option == 'ipn':
+            data = self._transform_data_ipn(request)
+        else:
+            data = self._transform_data_callback(request)
+
         return data
 
     def process(self, payment, data):
@@ -73,9 +91,11 @@ class PayooProvider(BasicProvider, ValidateProvider, PayooAdapter):
 
         # Process payment
         success_url = payment.get_success_url()
-        payment.transaction_id = order_no
-        payment.captured_amount = payment.total
-        payment.change_status(PaymentStatus.CONFIRMED)
+        payment.transaction_id = data['order_no']
+        if 'State' in data and data['State'] == 'PAYMENT_RECEIVED':
+            payment.captured_amount = payment.total
+            payment.change_status(PaymentStatus.CONFIRMED)
+
         return success_url
 
     def capture(self, payment, amount=None):
