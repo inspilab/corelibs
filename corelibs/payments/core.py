@@ -24,22 +24,7 @@ class BasicProvider(object):
         self._currency_code = currency_code
         self._capture = capture
 
-    def session_start(self, payment, data=None):
-        raise NotImplementedError()
-
-    def preprocess_data(self, request, option=None):
-        '''
-        Preprocess parse request.data to validated_data.
-        '''
-        raise NotImplementedError()
-
-    def process_data(self, payment, data):
-        '''
-        Process callback request from a payment provider.
-        '''
-        raise NotImplementedError()
-
-    def get_return_url(self, payment, extra_data=None):
+    def _get_return_url(self, payment, extra_data=None):
         payment_link = payment.get_process_url()
         url = payment_link
         if extra_data:
@@ -47,13 +32,22 @@ class BasicProvider(object):
             return url + '?' + qs
         return url
 
-    def get_cancel_url(self, payment, extra_data=None):
+    def _get_cancel_url(self, payment, extra_data=None):
         payment_link = payment.get_failure_url()
         url = payment_link
         if extra_data:
             qs = urlencode(extra_data)
             return url + '?' + qs
         return url
+
+    def transform_data(self, request, option=None):
+        raise NotImplementedError()
+
+    def on_waiting(self, payment, data=None):
+        raise NotImplementedError()
+
+    def process(self, payment, data):
+        raise NotImplementedError()
 
     def capture(self, payment, amount=None):
         raise NotImplementedError()

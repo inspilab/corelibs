@@ -101,9 +101,9 @@ class BasePayment(models.Model):
     def __unicode__(self):
         return self.variant
 
-    def session_start(self, data=None):
+    def on_waiting(self, data=None):
         provider = ProviderFactory.get_provider(self.variant)
-        return provider.session_start(self, data=data)
+        return provider.on_waiting(self, data=data)
 
     def get_purchased_items(self):
         return []

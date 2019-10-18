@@ -12,29 +12,26 @@ from django.http import HttpResponseRedirect
 import json
 from .. import PaymentError, PaymentStatus, RedirectNeeded
 from ..core import BasicProvider
+from .validate import ValidateProvider
 
 
-class BankProvider(BasicProvider):
+class BankProvider(BasicProvider, ValidateProvider):
     '''
     Bank payment provider
     '''
     def __init__(self, **kwargs):
         super(BankProvider, self).__init__(**kwargs)
 
-    def session_start(self, payment, data=None):
-        payment.change_status(PaymentStatus.WAITING)
-        return True
-
-    def preprocess_data(self, request, option=None):
+    def transform_data(self, request, option=None):
         data = request.data.copy()
         return data
 
-    def process_data(self, payment, data):
-        if payment.status == PaymentStatus.CONFIRMED:
-            raise PaymentError('This payment has already been confirmed.')
+    def on_waiting(self, payment, data=None):
+        payment.change_status(PaymentStatus.WAITING)
+        return True
 
-        if payment.status == PaymentStatus.PREAUTH:
-            raise PaymentError('This payment has already been processed.')
+    def process(self, payment, data):
+        self._validate_process(payment)
 
         success_url = payment.get_success_url()
         payment.change_status(PaymentStatus.PREAUTH)
@@ -42,10 +39,7 @@ class BankProvider(BasicProvider):
         return success_url
 
     def capture(self, payment, amount=None):
-        if payment.status == PaymentStatus.CONFIRMED:
-            raise PaymentError('This payment has already been confirmed.')
-
-        # Check supported currencies
+        self._validate_capture(payment)
 
         amount = int(amount or payment.total) * int(self._coefficient)
         payment.change_status(PaymentStatus.CONFIRMED)
