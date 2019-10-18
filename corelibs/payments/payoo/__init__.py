@@ -142,10 +142,7 @@ class PayooProvider(BasicProvider):
 
         return None
 
-    def get_form(self, payment, data=None):
-        # Check coefficient support
-        self.get_coefficient(currency_code=payment.currency)
-
+    def session_start(self, payment, data=None):
         if not payment.id:
             payment.save()
 
@@ -160,14 +157,15 @@ class PayooProvider(BasicProvider):
         payment.change_status(PaymentStatus.WAITING)
         raise RedirectNeeded(redirected_to_url)
 
-    def process_data(self, payment, request):
-        # Check coefficient support
-        self.get_coefficient(currency_code=payment.currency)
+    def preprocess_data(self, request, option=None):
+        data = request.data.copy()
+        return data
 
+    def process_data(self, payment, data):
         success_url = payment.get_success_url()
         try:
-            # Check format request
-            serializer = ResponseSerializer(data=request.data)
+            # Check format data
+            serializer = ResponseSerializer(data=data)
             serializer.is_valid(raise_exception=True)
             session = serializer.validated_data['session']
             order_no = serializer.validated_data['order_no']
@@ -182,8 +180,8 @@ class PayooProvider(BasicProvider):
                 raise Exception("Verified is failure. Order No: %s" % order_no)
 
             if not str(status) == '1':
-                if 'errormsg' in request.data and request.data['errormsg']:
-                    raise Exception("Process payoo failed. Error: %s" % request.data['errormsg'])
+                if 'errormsg' in data and data['errormsg']:
+                    raise Exception("Process payoo failed. Error: %s" % data['errormsg'])
 
         except Exception as e:
             raise PaymentError(str(e))

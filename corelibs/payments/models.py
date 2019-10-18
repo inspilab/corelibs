@@ -8,7 +8,7 @@ from django.urls import reverse
 from django.utils.translation import ugettext_lazy as _
 
 from . import FraudStatus, PaymentStatus
-from .core import provider_factory
+from .core import ProviderFactory
 
 
 class PaymentAttributeProxy(object):
@@ -79,25 +79,9 @@ class BasePayment(models.Model):
         abstract = True
 
     def change_status(self, status, message=''):
-        '''
-        Updates the Payment status and sends the status_changed signal.
-        '''
-        from .signals import status_changed
         self.status = status
         self.message = message
         self.save()
-        status_changed.send(sender=type(self), instance=self)
-
-    def change_fraud_status(self, status, message='', commit=True):
-        available_statuses = [choice[0] for choice in FraudStatus.CHOICES]
-        if status not in available_statuses:
-            raise ValueError(
-                'Wrong status "%s", it should be one of: %s' % (
-                    status, ', '.join(available_statuses)))
-        self.fraud_status = status
-        self.fraud_message = message
-        if commit:
-            self.save()
 
     def save(self, **kwargs):
         if not self.token:
@@ -117,9 +101,9 @@ class BasePayment(models.Model):
     def __unicode__(self):
         return self.variant
 
-    def get_form(self, data=None):
-        provider = provider_factory(self.variant)
-        return provider.get_form(self, data=data)
+    def session_start(self, data=None):
+        provider = ProviderFactory.get_provider(self.variant)
+        return provider.session_start(self, data=data)
 
     def get_purchased_items(self):
         return []
@@ -137,7 +121,7 @@ class BasePayment(models.Model):
         if self.status != PaymentStatus.PREAUTH:
             raise ValueError(
                 'Only pre-authorized payments can be captured.')
-        provider = provider_factory(self.variant)
+        provider = ProviderFactory.get_provider(self.variant)
         amount = provider.capture(self, amount)
         if amount:
             self.captured_amount = amount
@@ -147,7 +131,7 @@ class BasePayment(models.Model):
         if self.status != PaymentStatus.PREAUTH:
             raise ValueError(
                 'Only pre-authorized payments can be released.')
-        provider = provider_factory(self.variant)
+        provider = ProviderFactory.get_provider(self.variant)
         provider.release(self)
         self.change_status(PaymentStatus.REFUNDED)
 
@@ -159,7 +143,7 @@ class BasePayment(models.Model):
             if amount > self.captured_amount:
                 raise ValueError(
                     'Refund amount can not be greater then captured amount')
-            provider = provider_factory(self.variant)
+            provider = ProviderFactory.get_provider(self.variant)
             amount = provider.refund(self, amount)
             self.captured_amount -= amount
             self.refunded_amount += amount

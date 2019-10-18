@@ -17,7 +17,7 @@ import requests
 from requests.exceptions import HTTPError
 
 from .. import PaymentError, PaymentStatus, RedirectNeeded
-from ..core import BasicProvider, get_credit_card_issuer
+from ..core import BasicProvider
 
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
@@ -208,7 +208,7 @@ class PaypalProvider(BasicProvider):
         data['payer'] = {'payment_method': 'paypal'}
         return data
 
-    def get_form(self, payment, data=None):
+    def session_start(self, payment, data=None):
         if not payment.id:
             payment.save()
         links = self._get_links(payment)
@@ -221,9 +221,13 @@ class PaypalProvider(BasicProvider):
         payment.change_status(PaymentStatus.WAITING)
         raise RedirectNeeded(redirect_to['href'])
 
-    def process_data(self, payment, request):
+    def preprocess_data(self, request, option=None):
+        data = request.data.copy()
+        return data
+
+    def process_data(self, payment, data):
         success_url = payment.get_success_url()
-        payer_id = request.data.get('PayerID')
+        payer_id = data.get('PayerID')
         if not payer_id:
             raise PaymentError("Cannot find PayerID. Payment: #%s" % payment.token)
 
