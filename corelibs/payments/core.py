@@ -8,6 +8,7 @@ except ImportError:
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 
+from . import get_payment_method_model
 
 PAYMENT_VARIANTS = {'default': ('payments.bank.BankProvider', {})}
 
@@ -20,6 +21,9 @@ class BasicProvider(object):
     _method = 'post'
 
     def __init__(self, currency_code, coefficient, capture=True):
+        if not coefficient or coefficient <= 0:
+            raise Exception("Coefficient is invalid")
+
         self._coefficient = coefficient
         self._currency_code = currency_code
         self._capture = capture
@@ -62,7 +66,14 @@ class BasicProvider(object):
 class ProviderFactory(object):
 
     @staticmethod
-    def get_provider(variant, currency_code, coefficient):
+    def get_provider(variant, currency_code):
+        PaymentMethod = get_payment_method_model()
+        method = PaymentMethod.objects.filter(
+            payment_method=variant, currency=currency_code, is_active=True
+        ).first()
+        if not method or not method.coefficient or method.coefficient <= 0:
+            raise ValueError('Payment variant does not exist: %s' %  (variant,))
+
         variants = getattr(settings, 'PAYMENT_VARIANTS', PAYMENT_VARIANTS)
         handler, config = variants.get(variant, (None, None))
         if not handler:
@@ -72,5 +83,6 @@ class ProviderFactory(object):
         module = __import__(
             str(module_path), globals(), locals(), [str(class_name)])
         class_ = getattr(module, class_name)
-        provider = class_(**config, currency_code=currency_code, coefficient=coefficient)
+        provider = class_(
+            **config, currency_code=currency_code, coefficient=method.coefficient)
         return provider

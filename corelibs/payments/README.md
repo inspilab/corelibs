@@ -51,5 +51,5 @@ Create a `Payment` instance:
 Authorization and capture:
 
     payment = get_object_or_404(Payment, token=token)
-    provider = ProviderFactory.get_provider(payment.variant)
+    provider = ProviderFactory.get_provider(payment.variant, payment.currency)
     provider.process(payment, request)

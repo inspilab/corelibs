@@ -7,7 +7,7 @@ from django.db import models
 from django.urls import reverse
 from django.utils.translation import ugettext_lazy as _
 
-from . import FraudStatus, PaymentStatus
+from . import FraudStatus, PaymentStatus, get_payment_method_model
 from .core import ProviderFactory
 
 
@@ -102,8 +102,13 @@ class BasePayment(models.Model):
         return self.variant
 
     def on_waiting(self, data=None):
-        provider = ProviderFactory.get_provider(self.variant)
+        provider = ProviderFactory.get_provider(variant=self.variant, currency_code=self.currency)
         return provider.on_waiting(self, data=data)
+
+    def process(self, request, option=None):
+        provider = ProviderFactory.get_provider(variant=self.variant, currency_code=self.currency)
+        data = provider.transform_data(request, option)
+        return provider.process(self, data=data)
 
     def get_purchased_items(self):
         return []
@@ -121,7 +126,7 @@ class BasePayment(models.Model):
         if self.status != PaymentStatus.PREAUTH:
             raise ValueError(
                 'Only pre-authorized payments can be captured.')
-        provider = ProviderFactory.get_provider(self.variant)
+        provider = ProviderFactory.get_provider(variant=self.variant, currency_code=self.currency)
         amount = provider.capture(self, amount)
         if amount:
             self.captured_amount = amount
@@ -131,7 +136,7 @@ class BasePayment(models.Model):
         if self.status != PaymentStatus.PREAUTH:
             raise ValueError(
                 'Only pre-authorized payments can be released.')
-        provider = ProviderFactory.get_provider(self.variant)
+        provider = ProviderFactory.get_provider(variant=self.variant, currency_code=self.currency)
         provider.release(self)
         self.change_status(PaymentStatus.REFUNDED)
 
@@ -143,7 +148,7 @@ class BasePayment(models.Model):
             if amount > self.captured_amount:
                 raise ValueError(
                     'Refund amount can not be greater then captured amount')
-            provider = ProviderFactory.get_provider(self.variant)
+            provider = ProviderFactory.get_provider(variant=self.variant, currency_code=self.currency)
             amount = provider.refund(self, amount)
             self.captured_amount -= amount
             self.refunded_amount += amount
@@ -166,3 +171,22 @@ class BaseCustomer(models.Model):
     customer_id = models.CharField(max_length=200, db_index=True)
     email = models.EmailField(max_length=100, unique=True, db_index=True)
     method = models.CharField(max_length=100)
+
+
+class BaseMethod(models.Model):
+
+    class Meta:
+        abstract = True
+
+    created = models.DateTimeField(auto_now_add=True)
+    modified = models.DateTimeField(auto_now=True)
+    title = models.CharField(max_length=500, null=True, blank=True)
+    description = models.CharField(max_length=500, null=True, blank=True)
+    payment_method = models.CharField(max_length=100)
+    extra_data = JSONField(default=dict, blank=True, null=True)
+    is_active = models.BooleanField(default=False)
+    coefficient = models.IntegerField(null=True)
+
+    language = models.CharField(max_length=50)
+    country = models.CharField(max_length=50, blank=True)
+    currency = models.CharField(max_length=50)
