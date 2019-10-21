@@ -22,7 +22,7 @@ from .adapter import PaypalAdapter
 from .validate import ValidateProvider
 
 
-class PaypalProvider(BasicProvider, ValidateProvider PaypalAdapter):
+class PaypalProvider(BasicProvider, ValidateProvider, PaypalAdapter):
     '''
     paypal.com payment provider
     '''

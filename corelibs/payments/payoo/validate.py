@@ -6,6 +6,8 @@ from .. import (
     RedirectNeeded, PaymentError, PaymentStatus,
     get_payment_customer_model
 )
+from .serializers import ResponseSerializer
+
 import base64
 import hashlib
 
@@ -13,8 +15,11 @@ import hashlib
 class ValidateProvider(object):
 
     def _validate_process(self, payment, data):
-        if payment.bid:
-            raise PaymentError("Cart #%s has been converted" % payment.cart_id)
+        if payment.status == PaymentStatus.CONFIRMED:
+            raise PaymentError('This payment has already been confirmed.')
+
+        if payment.status == PaymentStatus.PREAUTH:
+            raise PaymentError('This payment has already been processed.')
 
         if payment.total <= 0:
             raise PaymentError("Payment total must be greater than 0")
@@ -45,7 +50,7 @@ class ValidateProvider(object):
         # Validate input data
         encoded_product_data = data['PayooConnectionPackage']['Data']
 
-        product_data base64.b64encode(encoded_product_data.encode('utf-8')).decode('utf-8').replace("\n", "")
+        product_data = base64.b64encode(encoded_product_data.encode('utf-8')).decode('utf-8').replace("\n", "")
         checksum_data = data['PayooConnectionPackage']['Signature']
         keys = data['PayooConnectionPackage']['KeyFields']
 
@@ -56,6 +61,9 @@ class ValidateProvider(object):
         str_hash = hashlib.sha512((str_data).encode()).hexdigest()
         if not str_hash == checksum:
             raise PaymentError("Verified is failure. Order No: %s" % product_data['order_no'])
+
+        if 'State' in product_data and product_data['State'] != 'PAYMENT_RECEIVED':
+            raise PaymentError("Process payoo failed. Error: %s" % product_data['State'])
 
     def _validate_capture(self, payment):
         pass

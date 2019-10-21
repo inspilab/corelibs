@@ -11,8 +11,11 @@ from .. import (
 class ValidateProvider(object):
 
     def _validate_process(self, payment, data):
-        if payment.bid:
-            raise PaymentError("Cart #%s has been converted" % payment.cart_id)
+        if payment.status == PaymentStatus.CONFIRMED:
+            raise PaymentError('This payment has already been confirmed.')
+
+        if payment.status == PaymentStatus.PREAUTH:
+            raise PaymentError('This payment has already been processed.')
 
         if payment.total <= 0:
             raise PaymentError("Payment total must be greater than 0")

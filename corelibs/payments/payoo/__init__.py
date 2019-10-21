@@ -17,8 +17,8 @@ import requests
 import json
 import hashlib
 
-from .serializers import ResponseSerializer
 from .adapter import PayooAdapter
+from .validate import ValidateProvider
 from .. import PaymentError, PaymentStatus, RedirectNeeded
 from ..core import BasicProvider
 
@@ -68,7 +68,7 @@ class PayooProvider(BasicProvider, ValidateProvider, PayooAdapter):
 
     def _transform_data_ipn(self, request):
         data = xmltodict.parse(request.data)
-        product_data base64.b64encode(encoded_product_data.encode('utf-8')).decode('utf-8').replace("\n", "")
+        product_data = base64.b64encode(encoded_product_data.encode('utf-8')).decode('utf-8').replace("\n", "")
         self._validate_checksum_ipn(data)
 
         return product_data
@@ -92,9 +92,9 @@ class PayooProvider(BasicProvider, ValidateProvider, PayooAdapter):
         # Process payment
         success_url = payment.get_success_url()
         payment.transaction_id = data['order_no']
-        if 'State' in data and data['State'] == 'PAYMENT_RECEIVED':
-            payment.captured_amount = payment.total
-            payment.change_status(PaymentStatus.CONFIRMED)
+
+        payment.captured_amount = payment.total
+        payment.change_status(PaymentStatus.CONFIRMED)
 
         return success_url
 
