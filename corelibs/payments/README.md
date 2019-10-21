@@ -25,7 +25,7 @@ Configure your ``settings.py``
 
     PAYMENT_MODEL = 'mypaymentapp.Payment'
     PAYMENT_VARIANTS = {
-        'default': ('payments.dummy.DummyProvider', {})}
+        'default': ('payments.bank.BankProvider', {})}
 
   Note: Variants are named pairs of payment providers and their configuration.
 
@@ -51,5 +51,5 @@ Create a `Payment` instance:
 Authorization and capture:
 
     payment = get_object_or_404(Payment, token=token)
-    provider = provider_factory(payment.variant)
-    provider.process_data(payment, request)
+    provider = ProviderFactory.get_provider(payment.variant, payment.currency)
+    provider.process(payment, request)

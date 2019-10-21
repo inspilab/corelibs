@@ -12,42 +12,36 @@ from django.http import HttpResponseRedirect
 import json
 from .. import PaymentError, PaymentStatus, RedirectNeeded
 from ..core import BasicProvider
+from .validate import ValidateProvider
 
 
-class BankProvider(BasicProvider):
+class BankProvider(BasicProvider, ValidateProvider):
     '''
     Bank payment provider
     '''
     def __init__(self, **kwargs):
         super(BankProvider, self).__init__(**kwargs)
 
-    def get_form(self, payment, data=None):
+    def transform_data(self, request, option=None):
+        data = request.data.copy()
+        return data
+
+    def on_waiting(self, payment, data=None):
         payment.change_status(PaymentStatus.WAITING)
         return True
 
-    def process_data(self, payment, request):
-        if payment.status == PaymentStatus.CONFIRMED:
-            raise PaymentError('This payment has already been confirmed.')
-
-        if payment.status == PaymentStatus.PREAUTH:
-            raise PaymentError('This payment has already been processed.')
-
-        # Check supported currencies
-        coefficient = self.get_coefficient(currency_code=payment.currency)
+    def process(self, payment, data):
+        self._validate_process(payment)
 
         success_url = payment.get_success_url()
         payment.change_status(PaymentStatus.PREAUTH)
-        payment.attrs.bank = json.dumps(request.data['bank'])
+        payment.attrs.bank = json.dumps(data['bank'])
         return success_url
 
     def capture(self, payment, amount=None):
-        if payment.status == PaymentStatus.CONFIRMED:
-            raise PaymentError('This payment has already been confirmed.')
+        self._validate_capture(payment)
 
-        # Check supported currencies
-        coefficient = self.get_coefficient(currency_code=payment.currency)
-
-        amount = int(amount or payment.total) * int(coefficient)
+        amount = int(amount or payment.total) * int(self._coefficient)
         payment.change_status(PaymentStatus.CONFIRMED)
         return amount
 

@@ -6,9 +6,10 @@ from uuid import uuid4
 from django.db import models
 from django.urls import reverse
 from django.utils.translation import ugettext_lazy as _
+from django.contrib.postgres.fields.jsonb import JSONField
 
-from . import FraudStatus, PaymentStatus
-from .core import provider_factory
+from . import FraudStatus, PaymentStatus, get_payment_method_model
+from .core import ProviderFactory
 
 
 class PaymentAttributeProxy(object):
@@ -79,25 +80,9 @@ class BasePayment(models.Model):
         abstract = True
 
     def change_status(self, status, message=''):
-        '''
-        Updates the Payment status and sends the status_changed signal.
-        '''
-        from .signals import status_changed
         self.status = status
         self.message = message
         self.save()
-        status_changed.send(sender=type(self), instance=self)
-
-    def change_fraud_status(self, status, message='', commit=True):
-        available_statuses = [choice[0] for choice in FraudStatus.CHOICES]
-        if status not in available_statuses:
-            raise ValueError(
-                'Wrong status "%s", it should be one of: %s' % (
-                    status, ', '.join(available_statuses)))
-        self.fraud_status = status
-        self.fraud_message = message
-        if commit:
-            self.save()
 
     def save(self, **kwargs):
         if not self.token:
@@ -117,9 +102,14 @@ class BasePayment(models.Model):
     def __unicode__(self):
         return self.variant
 
-    def get_form(self, data=None):
-        provider = provider_factory(self.variant)
-        return provider.get_form(self, data=data)
+    def on_waiting(self, data=None):
+        provider = ProviderFactory.get_provider(variant=self.variant, currency_code=self.currency)
+        return provider.on_waiting(self, data=data)
+
+    def process(self, request, option=None):
+        provider = ProviderFactory.get_provider(variant=self.variant, currency_code=self.currency)
+        data = provider.transform_data(request, option)
+        return provider.process(self, data=data)
 
     def get_purchased_items(self):
         return []
@@ -137,7 +127,7 @@ class BasePayment(models.Model):
         if self.status != PaymentStatus.PREAUTH:
             raise ValueError(
                 'Only pre-authorized payments can be captured.')
-        provider = provider_factory(self.variant)
+        provider = ProviderFactory.get_provider(variant=self.variant, currency_code=self.currency)
         amount = provider.capture(self, amount)
         if amount:
             self.captured_amount = amount
@@ -147,7 +137,7 @@ class BasePayment(models.Model):
         if self.status != PaymentStatus.PREAUTH:
             raise ValueError(
                 'Only pre-authorized payments can be released.')
-        provider = provider_factory(self.variant)
+        provider = ProviderFactory.get_provider(variant=self.variant, currency_code=self.currency)
         provider.release(self)
         self.change_status(PaymentStatus.REFUNDED)
 
@@ -159,7 +149,7 @@ class BasePayment(models.Model):
             if amount > self.captured_amount:
                 raise ValueError(
                     'Refund amount can not be greater then captured amount')
-            provider = provider_factory(self.variant)
+            provider = ProviderFactory.get_provider(variant=self.variant, currency_code=self.currency)
             amount = provider.refund(self, amount)
             self.captured_amount -= amount
             self.refunded_amount += amount
@@ -182,3 +172,22 @@ class BaseCustomer(models.Model):
     customer_id = models.CharField(max_length=200, db_index=True)
     email = models.EmailField(max_length=100, unique=True, db_index=True)
     method = models.CharField(max_length=100)
+
+
+class BaseMethod(models.Model):
+
+    class Meta:
+        abstract = True
+
+    created = models.DateTimeField(auto_now_add=True)
+    modified = models.DateTimeField(auto_now=True)
+    title = models.CharField(max_length=500, null=True, blank=True)
+    description = models.CharField(max_length=500, null=True, blank=True)
+    payment_method = models.CharField(max_length=100)
+    extra_data = JSONField(default=dict, blank=True, null=True)
+    is_active = models.BooleanField(default=False)
+    coefficient = models.IntegerField(null=True)
+
+    language = models.CharField(max_length=50)
+    country = models.CharField(max_length=50, blank=True)
+    currency = models.CharField(max_length=50, default='USD')

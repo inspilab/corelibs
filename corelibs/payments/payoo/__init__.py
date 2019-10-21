@@ -9,19 +9,24 @@ except ImportError:
     from urllib import urlencode, quote_plus
 from django.http import HttpResponseRedirect
 
+import xmltodict
+import base64
 from datetime import datetime, timedelta
 import logging
 import requests
 import json
 import hashlib
+
 from .serializers import ResponseSerializer
+from .adapter import PayooAdapter
 from .. import PaymentError, PaymentStatus, RedirectNeeded
 from ..core import BasicProvider
+
 
 logger = logging.getLogger(__name__)
 
 
-class PayooProvider(BasicProvider):
+class PayooProvider(BasicProvider, ValidateProvider, PayooAdapter):
     '''
     Payoo payment provider
     '''
@@ -46,112 +51,13 @@ class PayooProvider(BasicProvider):
         self.method_default = method_default or 'bank-payment'
         super(PayooProvider, self).__init__(**kwargs)
 
-    def post(self, payment, *args, **kwargs):
-        kwargs['headers'] = {
-            'Content-Type': 'application/json',
-            'APIUsername': self.api_user_name,
-            'APIPassword': self.api_password,
-            'APISignature': self.api_signature,
-        }
-        if 'data' in kwargs:
-            kwargs['data'] = json.dumps(kwargs['data'])
-        response = requests.post(*args, **kwargs)
-        try:
-            data = response.json()
-        except ValueError:
-            data = {}
-        if 400 <= response.status_code <= 500:
-            self.set_error_data(payment, data)
-            logger.debug(data)
-            message = 'Payoo error'
-            error_data = json.dumps(response.json())
-            payment.change_status(PaymentStatus.ERROR, message)
-            raise PaymentError(error_data)
-        else:
-            if 'result' in data and data['result'] == 'success':
-                self.set_response_data(payment, data)
-            else:
-                message = 'Payoo error'
-                payment.change_status(PaymentStatus.ERROR, message)
-                error_data = json.dumps(response.json())
-                raise PaymentError(error_data)
-        return payment
-
-    def set_response_data(self, payment, data):
-        extra_data = data or {}
-        payment.extra_data = json.dumps(extra_data)
-
-    def set_error_data(self, payment, error):
-        extra_data = json.loads(payment.extra_data or '{}')
-        extra_data['error'] = error
-        payment.extra_data = json.dumps(extra_data)
-
-    def _generate_order_xml_data(self, payment, extra_data):
-        order_no = payment.token
-        order_cash_amount = int(payment.total)
-        order_ship_date = payment.billing_ship_date
-        if not order_ship_date:
-            order_ship_date = datetime.now().date() + timedelta(days=1)
-
-        order_ship_date = order_ship_date.strftime("%d/%m/%Y")
-        order_detail = payment.description
-        validity_date = datetime.now() + timedelta(days=self.order_ship_days)
-        validity_time = validity_date.strftime("%Y%m%d%H%M%S")
-        customer_name = str(payment.billing_first_name) + str(payment.billing_last_name)
-        customer_email = payment.billing_email
-
-        order_xml = f'<shops><shop>'
-        order_xml += f'<session>{order_no}</session>'
-        order_xml += f'<username>{self.username}</username>'
-        order_xml += f'<shop_id>{self.shop_id}</shop_id>'
-        order_xml += f'<shop_title>{self.shop_title}</shop_title>'
-        order_xml += f'<shop_domain>{self.shop_domain}</shop_domain>'
-        order_xml += f'<shop_back_url>{self.get_return_url(payment)}</shop_back_url>'
-        order_xml += f'<order_no>{order_no}</order_no>'
-        order_xml += f'<order_cash_amount>{order_cash_amount}</order_cash_amount>'
-        order_xml += f'<order_ship_date>{order_ship_date}</order_ship_date>'
-        order_xml += f'<order_ship_days>{self.order_ship_days}</order_ship_days>'
-        order_xml += f'<order_description>{quote_plus(order_detail)}</order_description>'
-        order_xml += f'<validity_time>{validity_time}</validity_time>'
-        order_xml += f'<notify_url>{self.notify_url}</notify_url>'
-        order_xml += f'<customer>'
-        if (customer_name and customer_email):
-            order_xml += f'<name>{customer_name}</name>'
-            order_xml += f'<email>{customer_email}</email>'
-
-        order_xml += f'</customer></shop></shops>'
-
-        return order_xml
-
-    def get_product_data(self, payment, extra_data=None):
-        order_xml = self._generate_order_xml_data(payment, extra_data)
-        checksum = hashlib.sha512((self.secret_key + order_xml).encode()).hexdigest()
-
-        data = {
-            'data': order_xml,
-            'checksum': checksum,
-            'refer': self.shop_domain,
-            'pm': self.method_default
-        }
-        return data
-
-    def _get_link_payment(self, payment):
-        extra_data = json.loads(payment.extra_data or '{}')
-        if 'order' in extra_data and extra_data['order'] and 'payment_url' in extra_data['order']:
-            return extra_data['order']['payment_url']
-
-        return None
-
-    def get_form(self, payment, data=None):
-        # Check coefficient support
-        self.get_coefficient(currency_code=payment.currency)
-
+    def on_waiting(self, payment, data=None):
         if not payment.id:
             payment.save()
 
         redirected_to_url = self._get_link_payment(payment)
         if not redirected_to_url:
-            payment = self.create_payment(payment, extra_data=data)
+            payment = self._create_payment(payment, extra_data=data)
             redirected_to_url = self._get_link_payment(payment)
 
         if not redirected_to_url:
@@ -160,44 +66,37 @@ class PayooProvider(BasicProvider):
         payment.change_status(PaymentStatus.WAITING)
         raise RedirectNeeded(redirected_to_url)
 
-    def process_data(self, payment, request):
-        # Check coefficient support
-        self.get_coefficient(currency_code=payment.currency)
+    def _transform_data_ipn(self, request):
+        data = xmltodict.parse(request.data)
+        product_data base64.b64encode(encoded_product_data.encode('utf-8')).decode('utf-8').replace("\n", "")
+        self._validate_checksum_ipn(data)
 
-        success_url = payment.get_success_url()
-        try:
-            # Check format request
-            serializer = ResponseSerializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
-            session = serializer.validated_data['session']
-            order_no = serializer.validated_data['order_no']
-            status = serializer.validated_data['status']
-            checksum = serializer.validated_data['checksum']
+        return product_data
 
-            # Checksum
-            str_hash = hashlib.sha512(
-                (self.secret_key + session + '.' + order_no + '.' + status).encode()
-            ).hexdigest()
-            if not str_hash == checksum:
-                raise Exception("Verified is failure. Order No: %s" % order_no)
+    def _transform_data_callback(self, request):
+        data = request.data.copy()
+        self._validate_checksum_callback(data)
+        return data
 
-            if not str(status) == '1':
-                if 'errormsg' in request.data and request.data['errormsg']:
-                    raise Exception("Process payoo failed. Error: %s" % request.data['errormsg'])
+    def transform_data(self, request, option=None):
+        if option == 'ipn':
+            data = self._transform_data_ipn(request)
+        else:
+            data = self._transform_data_callback(request)
 
-        except Exception as e:
-            raise PaymentError(str(e))
+        return data
+
+    def process(self, payment, data):
+        self._validate_process(payment, data)
 
         # Process payment
-        payment.transaction_id = order_no
-        payment.captured_amount = payment.total
-        payment.change_status(PaymentStatus.CONFIRMED)
-        return success_url
+        success_url = payment.get_success_url()
+        payment.transaction_id = data['order_no']
+        if 'State' in data and data['State'] == 'PAYMENT_RECEIVED':
+            payment.captured_amount = payment.total
+            payment.change_status(PaymentStatus.CONFIRMED)
 
-    def create_payment(self, payment, extra_data=None):
-        product_data = self.get_product_data(payment, extra_data)
-        payment = self.post(payment, self.check_out_url, data=product_data)
-        return payment
+        return success_url
 
     def capture(self, payment, amount=None):
         pass
