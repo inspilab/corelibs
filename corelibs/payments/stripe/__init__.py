@@ -35,36 +35,33 @@ class StripeProvider(BasicProvider, ValidateProvider, StripeAdapter):
 
     def process(self, payment, data):
         self._validate_process(payment, data)
-
-        success_url = payment.get_success_url()
         stripe.api_key = self.secret_key
+
         try:
             # Update customer info
-            token = stripe.Token.create(card=data['card'])
-            customer, error = self._create_or_update_customer(
-                email=data['user_email'], method='stripe', token_id=token.id
-            )
-            if error:
-                raise Exception("Update customer failed", error)
-
+            customer = self._create_or_update_customer(data['user_email'], data['card'])
             amount_charge = int(payment.total * self._coefficient)
-            self.charge = stripe.Charge.create(
-                capture=False,
-                amount=amount_charge,
-                currency=payment.currency,
-                customer=customer.customer_id)
+            if self._capture:
+                self.charge = stripe.Charge.create(
+                    capture=True, amount=amount_charge,
+                    currency=payment.currency, customer=customer.customer_id
+                )
+                payment.captured_amount = payment.total
+                payment.change_status(PaymentStatus.CONFIRMED)
+            else:
+                self.charge = stripe.Charge.create(
+                    capture=False, amount=amount_charge,
+                    currency=payment.currency, customer=customer.customer_id
+                )
+                payment.change_status(PaymentStatus.PREAUTH)
+
         except Exception as e:
             error_message = str(e)
             raise PaymentError(error_message)
 
         payment.transaction_id = self.charge.id
         payment.attrs.charge = json.dumps(self.charge)
-        payment.change_status(PaymentStatus.PREAUTH)
-
-        if self._capture:
-            payment.capture()
-
-        return success_url
+        return payment.get_success_url()
 
     def capture(self, payment, amount=None):
         self._validate_capture(payment)

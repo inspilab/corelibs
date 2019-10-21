@@ -27,10 +27,11 @@ class PaymentAttributeProxy(object):
             return super(PaymentAttributeProxy, self).__setattr__(key, value)
         try:
             data = json.loads(self._payment.extra_data)
-        except ValueError:
-            data = {}
-        data[key] = value
-        self._payment.extra_data = json.dumps(data)
+            data[key] = value
+            self._payment.extra_data = json.dumps(data)
+        except Exception:
+            data = {key: value}
+            self._payment.extra_data = json.dumps(data)
 
 
 class BasePayment(models.Model):
@@ -51,6 +52,8 @@ class BasePayment(models.Model):
     transaction_id = models.CharField(max_length=255, blank=True)
     #: Currency code (may be provider-specific)
     currency = models.CharField(max_length=10)
+    language = models.CharField(max_length=50, null=True)
+    country = models.CharField(max_length=50, null=True, blank=True)
     #: Total amount (gross)
     total = models.DecimalField(max_digits=20, decimal_places=2, default='0.0')
     delivery = models.DecimalField(
@@ -114,13 +117,13 @@ class BasePayment(models.Model):
     def get_purchased_items(self):
         return []
 
-    def get_failure_url(self):
+    def get_cancel_url(self):
         raise NotImplementedError()
 
     def get_success_url(self):
         raise NotImplementedError()
 
-    def get_process_url(self):
+    def get_return_url(self):
         return NotImplementedError()
 
     def capture(self, amount=None):

@@ -10,7 +10,7 @@ Define a `Payment` model by subclassing `payments.models.BasePayment`
 
     class Payment(BasePayment):
 
-        def get_failure_url(self):
+        def get_cancel_url(self):
             return 'http://example.com/failure/'
 
         def get_success_url(self):

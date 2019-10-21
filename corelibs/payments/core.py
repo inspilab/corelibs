@@ -29,7 +29,7 @@ class BasicProvider(object):
         self._capture = capture
 
     def _get_return_url(self, payment, extra_data=None):
-        payment_link = payment.get_process_url()
+        payment_link = payment.get_return_url()
         url = payment_link
         if extra_data:
             qs = urlencode(extra_data)
@@ -37,7 +37,7 @@ class BasicProvider(object):
         return url
 
     def _get_cancel_url(self, payment, extra_data=None):
-        payment_link = payment.get_failure_url()
+        payment_link = payment.get_cancel_url()
         url = payment_link
         if extra_data:
             qs = urlencode(extra_data)
