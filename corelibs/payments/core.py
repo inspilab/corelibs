@@ -36,6 +36,14 @@ class BasicProvider(object):
             return url + '?' + qs
         return url
 
+    def _get_ipn_url(self, payment, extra_data=None):
+        payment_link = payment.get_ipn_url()
+        url = payment_link
+        if extra_data:
+            qs = urlencode(extra_data)
+            return url + '?' + qs
+        return url
+
     def _get_cancel_url(self, payment, extra_data=None):
         payment_link = payment.get_cancel_url()
         url = payment_link
@@ -44,7 +52,7 @@ class BasicProvider(object):
             return url + '?' + qs
         return url
 
-    def transform_data(self, request, option=None):
+    def transform_data(self, request):
         raise NotImplementedError()
 
     def on_waiting(self, payment, data=None):

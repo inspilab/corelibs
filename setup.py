@@ -8,7 +8,7 @@ README = open(os.path.join(here, 'README.md')).read()
 
 setup(
     name='corelibs',
-    version='1.8.4',
+    version='1.8.5',
     packages=[
         'corelibs',
         'corelibs.pubsub',
@@ -40,6 +40,7 @@ setup(
         'redis==3.2.1',
         'google-cloud-pubsub==0.38.0',
         'djangorestframework==3.8.2',
-        'xmltodict==0.12.0'
+        'xmltodict==0.12.0',
+        'dicttoxml==1.7.4'
     ]
 )

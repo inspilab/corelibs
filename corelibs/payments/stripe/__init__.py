@@ -28,7 +28,7 @@ class StripeProvider(BasicProvider, ValidateProvider, StripeAdapter):
         payment.change_status(PaymentStatus.WAITING)
         return True
 
-    def transform_data(self, request, option=None):
+    def transform_data(self, request):
         data = request.data.copy()
         data['user_email'] = request.user.email
         return data

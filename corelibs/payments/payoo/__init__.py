@@ -31,8 +31,8 @@ class PayooProvider(BasicProvider, ValidateProvider, PayooAdapter):
     Payoo payment provider
     '''
     def __init__(
-            self, secret_key, username, shop_id, shop_title, shop_domain, shop_back_url,
-            notify_url, check_out_url, api_user_name, api_password, api_signature,
+            self, secret_key, username, shop_id, shop_title, shop_domain,
+            check_out_url, api_user_name, api_password, api_signature,
             order_ship_days, method_default,
             **kwargs
         ):
@@ -41,8 +41,6 @@ class PayooProvider(BasicProvider, ValidateProvider, PayooAdapter):
         self.shop_id = shop_id
         self.shop_title = shop_title
         self.shop_domain = shop_domain
-        self.shop_back_url = shop_back_url
-        self.notify_url = notify_url
         self.check_out_url = check_out_url
         self.api_user_name = api_user_name
         self.api_password = api_password
@@ -66,25 +64,8 @@ class PayooProvider(BasicProvider, ValidateProvider, PayooAdapter):
         payment.change_status(PaymentStatus.WAITING)
         raise RedirectNeeded(redirected_to_url)
 
-    def _transform_data_ipn(self, request):
-        data = xmltodict.parse(request.data)
-        product_data = base64.b64encode(encoded_product_data.encode('utf-8')).decode('utf-8').replace("\n", "")
-        self._validate_checksum_ipn(data)
-
-        return product_data
-
-    def _transform_data_callback(self, request):
-        data = request.data.copy()
-        self._validate_checksum_callback(data)
-        return data
-
-    def transform_data(self, request, option=None):
-        if option == 'ipn':
-            data = self._transform_data_ipn(request)
-        else:
-            data = self._transform_data_callback(request)
-
-        return data
+    def transform_data(self, request):
+        raise NotImplementedError()
 
     def process(self, payment, data):
         self._validate_process(payment, data)

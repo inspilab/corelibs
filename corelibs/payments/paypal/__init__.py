@@ -38,7 +38,7 @@ class PaypalProvider(BasicProvider, ValidateProvider, PaypalAdapter):
             str(self.endpoint) + '/v1/payments/capture/{captureId}/refund')
         super(PaypalProvider, self).__init__(**kwargs)
 
-    def transform_data(self, request, option=None):
+    def transform_data(self, request):
         data = request.data.copy()
         return data
 

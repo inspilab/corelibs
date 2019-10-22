@@ -109,9 +109,9 @@ class BasePayment(models.Model):
         provider = ProviderFactory.get_provider(variant=self.variant, currency_code=self.currency)
         return provider.on_waiting(self, data=data)
 
-    def process(self, request, option=None):
+    def process(self, request):
         provider = ProviderFactory.get_provider(variant=self.variant, currency_code=self.currency)
-        data = provider.transform_data(request, option)
+        data = provider.transform_data(request)
         return provider.process(self, data=data)
 
     def get_purchased_items(self):
@@ -124,6 +124,9 @@ class BasePayment(models.Model):
         raise NotImplementedError()
 
     def get_return_url(self):
+        return NotImplementedError()
+
+    def get_ipn_url(self):
         return NotImplementedError()
 
     def capture(self, amount=None):

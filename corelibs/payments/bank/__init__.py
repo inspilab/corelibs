@@ -22,7 +22,7 @@ class BankProvider(BasicProvider, ValidateProvider):
     def __init__(self, **kwargs):
         super(BankProvider, self).__init__(**kwargs)
 
-    def transform_data(self, request, option=None):
+    def transform_data(self, request):
         data = request.data.copy()
         return data
 
