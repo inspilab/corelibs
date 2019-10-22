@@ -32,7 +32,7 @@ class PayooShopbackProvider(PayooProvider):
 
     def _order_data_xml(self, payment):
         order_data_json = self._order_data_json(payment)
-        order_data_json['shop_back_url'] = self._get_return_url(payment)
+        order_data_json['shop']['shop_back_url'] = self._get_return_url(payment)
         order_data_xml = dicttoxml.dicttoxml(order_data_json, attr_type=False, custom_root='shops')
         order_data_xml = re.sub("<\?xml.*?>", "", order_data_xml.decode())
         return order_data_xml
