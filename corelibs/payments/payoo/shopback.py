@@ -36,3 +36,16 @@ class PayooShopbackProvider(PayooProvider):
         order_data_xml = dicttoxml.dicttoxml(order_data_json, attr_type=False, custom_root='shops')
         order_data_xml = re.sub("<\?xml.*?>", "", order_data_xml.decode())
         return order_data_xml
+
+    def process(self, payment, data):
+        self._validate_process(payment, data)
+
+        # Process payment
+        success_url = payment.get_success_url()
+        payment.transaction_id = data['order_no']
+
+        if str(data['status']) == '1':
+            payment.captured_amount = payment.total
+            payment.change_status(PaymentStatus.CONFIRMED)
+
+        return success_url

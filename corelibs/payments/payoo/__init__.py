@@ -68,16 +68,7 @@ class PayooProvider(BasicProvider, ValidateProvider, PayooAdapter):
         raise NotImplementedError()
 
     def process(self, payment, data):
-        self._validate_process(payment, data)
-
-        # Process payment
-        success_url = payment.get_success_url()
-        payment.transaction_id = data['order_no']
-
-        payment.captured_amount = payment.total
-        payment.change_status(PaymentStatus.CONFIRMED)
-
-        return success_url
+        raise NotImplementedError()
 
     def capture(self, payment, amount=None):
         pass

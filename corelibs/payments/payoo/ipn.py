@@ -9,6 +9,8 @@ except ImportError:
     from urllib import urlencode, quote_plus
 from django.http import HttpResponseRedirect
 
+import dicttoxml
+import re
 import xmltodict
 import base64
 from datetime import datetime, timedelta
@@ -24,31 +26,33 @@ from . import PayooProvider
 class PayooIPNProvider(PayooProvider):
 
     def transform_data(self, request):
-        data = xmltodict.parse(request.data)
-        self._validate(data)
+        data = request.data
+        product_data = self._validate(data)
 
-        encoded_product_data = data['PayooConnectionPackage']['Data']
-        product_data = base64.b64encode(encoded_product_data.encode('utf-8')).decode('utf-8').replace("\n", "")
         return product_data
 
     def _validate(self, data):
         # Validate input data
-        encoded_product_data = data['PayooConnectionPackage']['Data']
+        encoded_product_data = data['Data']
 
-        product_data = base64.b64encode(encoded_product_data.encode('utf-8')).decode('utf-8').replace("\n", "")
-        checksum_data = data['PayooConnectionPackage']['Signature']
-        keys = data['PayooConnectionPackage']['KeyFields']
+        product_data_xml = base64.b64decode(encoded_product_data).decode('utf-8').replace("\n", "")
+        product_data_json = xmltodict.parse(product_data_xml)
+        product_data = {}
+        for k in product_data_json.keys():
+            product_data = product_data_json[k]
+
+        checksum_data = data['Signature']
+        keys = data['KeyFields'].split('|')
 
         str_data = self.secret_key
         for k in keys:
             str_data += ('|' + product_data[k])
 
         str_hash = hashlib.sha512((str_data).encode()).hexdigest()
-        if not str_hash == checksum:
+        if not str_hash == checksum_data:
             raise PaymentError("Verified is failure. Order No: %s" % product_data['order_no'])
 
-        if 'State' in product_data and product_data['State'] != 'PAYMENT_RECEIVED':
-            raise PaymentError("Process payoo failed. Error: %s" % product_data['State'])
+        return product_data
 
     def _order_data_xml(self, payment):
         order_data_json = self._order_data_json(payment)
@@ -56,3 +60,16 @@ class PayooIPNProvider(PayooProvider):
         order_data_xml = dicttoxml.dicttoxml(order_data_json, attr_type=False, custom_root='shops')
         order_data_xml = re.sub("<\?xml.*?>", "", order_data_xml.decode())
         return order_data_xml
+
+    def process(self, payment, data):
+        self._validate_process(payment, data)
+
+        # Process payment
+        success_url = payment.get_success_url()
+        payment.transaction_id = data['order_no']
+
+        if 'State' in data and data['State'] == 'PAYMENT_RECEIVED':
+            payment.captured_amount = payment.total
+            payment.change_status(PaymentStatus.CONFIRMED)
+
+        return success_url
