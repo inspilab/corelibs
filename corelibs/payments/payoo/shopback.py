@@ -12,7 +12,7 @@ import dicttoxml
 import re
 
 from .serializers import ShopbackSerializer
-from .. import PaymentError
+from .. import PaymentError, PaymentStatus
 from . import PayooProvider
 
 
